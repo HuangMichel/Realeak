@@ -745,7 +745,12 @@ atteint. Explique chaque choix en une phrase courte en francais dans le champ `w
 a la fois."""
 
 
+LIVE_FETCHES_CAPPED = 3  # nombre max de pages Vinted par run quand AGENT_MAX_LISTINGS est fixe
+
+
 def phase_collect(ctx: Ctx, max_listings=None, max_calls=12) -> dict:
+    """Toujours au moins une collecte en direct (fr page 1, les plus recentes), puis la boucle de l'agent.
+    Avec max_listings (run borne), la collecte est plafonnee a LIVE_FETCHES_CAPPED pages."""
     from app.catalog import load_shopify_catalog
     from app.collect import COUNTRIES, collect_page
 
@@ -754,9 +759,8 @@ def phase_collect(ctx: Ctx, max_listings=None, max_calls=12) -> dict:
         n = load_shopify_catalog(ctx.brand)
         ctx.log("collect", f"Shopify catalog loaded: {n} products")
     have = q("SELECT COUNT(*) AS n FROM listings WHERE brand=:b", b=ctx.brand)[0]["n"]
-    if max_listings and have >= max_listings:
-        ctx.log("collect", f"Collection skipped: {have} listings already in database (target {max_listings})")
-        return {"calls": 0, "collected_new": 0}
+    if max_listings:
+        max_calls = min(max_calls, LIVE_FETCHES_CAPPED)
 
     mem_txt = ""
     if ctx.use_memory:
@@ -764,13 +768,38 @@ def phase_collect(ctx: Ctx, max_listings=None, max_calls=12) -> dict:
         if qm:
             mem_txt = "\nMemoire des collectes precedentes (pays:page -> rendement) : " + "; ".join(
                 f"{r['key']} -> {r['value']}" for r in qm[:15])
-    goal = f" Objectif : environ {max_listings} annonces au total." if max_listings else ""
+    goal = f" Objectif : environ {max_listings} annonces nouvelles. Budget : {max_calls} appels." if max_listings else ""
     base = (f"Marque : {ctx.brand}. Annonces deja en base : {have}. Pays disponibles : {', '.join(COUNTRIES)}."
             f"{goal}{mem_txt}")
-    calls, new_total, seen, notebook = 0, 0, set(), []
+    st = {"calls": 0, "new": 0}
+    seen, notebook = set(), []
+
+    def fetch(c, p, why):
+        seen.add((c, p))
+        st["calls"] += 1
+        ctx.log("collect", f"Call {st['calls']}/{max_calls}: {c} page {p} - {why}")
+        try:
+            r = collect_page(ctx.brand, c, p, ctx.run_id)
+        except Exception as e:  # noqa: BLE001
+            ctx.log("collect", f"Failed {c} p{p}: {str(e)[:150]}")
+            notebook.append(f"ERREUR {c} p{p} : {str(e)[:100]}")
+            return
+        st["new"] += r["new"]
+        pct = round(100 * r["new"] / r["cards"]) if r["cards"] else 0
+        ctx.log("collect", f"{c} page {p}: {r['cards']} cards, {r['new']} new ({pct} %), total {r['total']}")
+        _remember_query(ctx, c, p, r)
+        notebook.append(f"{c} p{p} : {r['cards']} cartes, {r['new']} nouvelles ({pct} %), total {r['total']}")
+
+    fetch("fr", 1, "newest listings first (always refreshed live)")
     for _ in range(CODEX_COLLECT_TURNS if use_codex() else 16):
+        if max_listings and st["new"] >= max_listings:
+            ctx.log("collect", "Enough new listings for this run: collection stopped")
+            break
+        if st["calls"] >= max_calls:
+            ctx.log("collect", "Call budget exhausted: collection stopped")
+            break
         prompt = (base + "\nCarnet des appels deja faits : " + (" | ".join(notebook) or "(aucun)") +
-                  f"\nAppels restants : {max_calls - calls}. Choisis la prochaine action.")
+                  f"\nAppels restants : {max_calls - st['calls']}. Choisis la prochaine action.")
         if use_codex():
             inp = _cx(ctx, SMART, COLLECT_SYSTEM + "\n\n" + prompt + "\nReponds en JSON : action ('fetch' pour recuperer "
                       "une page, 'finish' pour terminer), country (code pays ou null), page (entier ou null), reason (une "
@@ -796,30 +825,11 @@ def phase_collect(ctx: Ctx, max_listings=None, max_calls=12) -> dict:
             p = int(inp.get("page") or 1)
         except (TypeError, ValueError):
             p = 1
-        if calls >= max_calls:
-            ctx.log("collect", "Call budget exhausted: collection stopped")
-            break
         if (c, p) in seen or c not in COUNTRIES:
             notebook.append(f"ERREUR {c} p{p} : deja recuperee ou pays invalide")
             continue
-        seen.add((c, p))
-        calls += 1
-        ctx.log("collect", f"Call {calls}/{max_calls}: {c} page {p} - {inp.get('why', '')}")
-        try:
-            r = collect_page(ctx.brand, c, p, ctx.run_id)
-        except Exception as e:  # noqa: BLE001
-            ctx.log("collect", f"Failed {c} p{p}: {str(e)[:150]}")
-            notebook.append(f"ERREUR {c} p{p} : {str(e)[:100]}")
-            continue
-        new_total += r["new"]
-        pct = round(100 * r["new"] / r["cards"]) if r["cards"] else 0
-        ctx.log("collect", f"{c} page {p}: {r['cards']} cards, {r['new']} new ({pct} %), total {r['total']}")
-        _remember_query(ctx, c, p, r)
-        notebook.append(f"{c} p{p} : {r['cards']} cartes, {r['new']} nouvelles ({pct} %), total {r['total']}")
-        if max_listings and r["total"] >= max_listings:
-            ctx.log("collect", "Listing target reached: collection stopped")
-            break
-    return {"calls": calls, "collected_new": new_total}
+        fetch(c, p, inp.get("why", ""))
+    return {"calls": st["calls"], "collected_new": st["new"]}
 
 
 def _remember_query(ctx, country, page, r):
@@ -1035,11 +1045,14 @@ def phase_identify(ctx: Ctx, max_listings=None) -> dict:
         raise RuntimeError("Catalogue produits vide : rien a identifier")
     idx = Index(products, brand_words_for(ctx.brand))
     todo = q("""SELECT l.* FROM listings l LEFT JOIN matches m ON m.listing_id=l.id
-                WHERE l.brand=:b AND m.listing_id IS NULL ORDER BY l.last_seen DESC, l.id""", b=ctx.brand)
+                WHERE l.brand=:b AND m.listing_id IS NULL ORDER BY l.first_seen DESC, l.id DESC""", b=ctx.brand)
     if max_listings:
         todo = todo[:max_listings]
-    ctx.log("identify", f"{len(todo)} listings to identify ({len(products)} catalog products, memory "
-            f"{'enabled' if ctx.use_memory else 'disabled'})")
+    if todo:
+        ctx.log("identify", f"{len(todo)} listings to identify ({len(products)} catalog products, memory "
+                f"{'enabled' if ctx.use_memory else 'disabled'})")
+    else:
+        ctx.log("identify", "No new listings on Vinted since last refresh: nothing to identify")
     mem = Memory.load(ctx.brand) if ctx.use_memory else None
     if mem:
         ctx.log("identify", f"Memory loaded: {sum(len(v) for v in mem.aliases.values())} aliases, "
@@ -1166,6 +1179,8 @@ def phase_insights(ctx: Ctx) -> list[str]:
 def run_agent(brand: str, run_id: str, use_memory: bool = True, max_listings: int | None = None) -> dict:
     ctx = Ctx(brand, run_id, use_memory)
     stats: dict = {}
+    if max_listings is None:
+        max_listings = int(_env("AGENT_MAX_LISTINGS") or 0) or None
     try:
         ctx.log("start", f"Starting agent for {brand} (memory {'ON' if use_memory else 'OFF'}"
                 f"{f', max {max_listings} listings' if max_listings else ''})")

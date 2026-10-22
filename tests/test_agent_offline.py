@@ -198,3 +198,72 @@ def test_identify_codex_failure_is_an_error_not_a_guess(monkeypatch):
     ctx = agent.Ctx("cabaia", None, use_memory=False)
     out = agent.identify_batch(ctx, [{"id": "L1", "title": "Pochette A", "image_url": None}], idx, lambda l: None)
     assert "error" in out[0]
+
+
+# --- run borne (AGENT_MAX_LISTINGS) : toujours une collecte en direct, identification des plus recentes ---
+def _fake_db(monkeypatch, listings_total=315, todo=()):
+    sqls = []
+
+    def fake_q(sql, **kw):
+        sqls.append(sql)
+        if "FROM products WHERE brand=:b LIMIT 1" in sql:
+            return [{"n": 1}]
+        if "COUNT(*)" in sql:
+            return [{"n": listings_total}]
+        if "FROM products" in sql:
+            return [{"id": "1", "title": "Pochette Cody", "product_type": "Pochette", "price_eur": 30,
+                     "image_url": None, "images": "[]"}]
+        if "LEFT JOIN matches" in sql:
+            return list(todo)
+        return []
+
+    monkeypatch.setattr(agent, "q", fake_q)
+    monkeypatch.setattr(agent, "x", lambda *a, **k: None)
+    return sqls
+
+
+def test_capped_run_always_collects_live_and_caps_fetches(monkeypatch):
+    import app.collect as collect
+    _fake_db(monkeypatch, listings_total=315)
+    fetched = []
+    monkeypatch.setattr(collect, "collect_page", lambda b, c, p, rid=None: fetched.append((c, p)) or
+                        {"cards": 10, "new": 0, "total": 315})
+    turn = iter(range(1, 20))
+    monkeypatch.setattr(agent, "use_codex", lambda: True)
+    monkeypatch.setattr(agent, "_cx", lambda *a, **k: {"action": "fetch", "country": "fr", "page": next(turn)})
+    ctx = agent.Ctx("cabaia", None, use_memory=False)
+    logs = []
+    ctx.log = lambda phase, msg: logs.append(msg)
+    res = agent.phase_collect(ctx, max_listings=8)
+    assert fetched == [("fr", 1), ("fr", 2), ("fr", 3)] and res == {"calls": 3, "collected_new": 0}
+    assert not any("skipped" in m for m in logs)
+
+
+def test_identify_orders_newest_first_caps_and_says_when_nothing_new(monkeypatch):
+    sqls = _fake_db(monkeypatch, todo=[])
+    ctx = agent.Ctx("cabaia", None, use_memory=False)
+    logs = []
+    ctx.log = lambda phase, msg: logs.append(msg)
+    res = agent.phase_identify(ctx, max_listings=8)
+    assert res["listings"] == 0 and "No new listings on Vinted since last refresh" in " ".join(logs)
+    assert any("ORDER BY l.first_seen DESC" in s for s in sqls)
+
+    rows = [{"id": str(i), "title": f"t{i}", "image_url": None} for i in range(5)]
+    _fake_db(monkeypatch, todo=rows)
+    seen = []
+    monkeypatch.setattr(agent, "identify_batch", lambda c, todo, *a, **k: seen.append([l["id"] for l in todo]))
+    agent.phase_identify(ctx, max_listings=3)
+    assert seen == [["0", "1", "2"]]
+
+
+def test_run_agent_reads_agent_max_listings_env(monkeypatch):
+    _fake_db(monkeypatch)
+    got = []
+    monkeypatch.setenv("AGENT_MAX_LISTINGS", "3")
+    monkeypatch.setattr(agent, "phase_collect", lambda ctx, ml=None, **k: got.append(ml) or {"calls": 1, "collected_new": 0})
+    monkeypatch.setattr(agent, "phase_identify", lambda ctx, ml=None: {"listings": 0, "matched": 0, "unknown": 0,
+                                                                        "escalated": 0, "errors": 0})
+    monkeypatch.setattr(agent, "phase_learn", lambda ctx: 0)
+    monkeypatch.setattr(agent, "phase_insights", lambda ctx: [])
+    agent.run_agent("cabaia", "r1")
+    assert got == [3]
