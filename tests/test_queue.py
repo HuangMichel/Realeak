@@ -28,5 +28,5 @@ def test_queue_mode_route_and_worker(monkeypatch, tmp_path):
         "UPDATE runs SET status='done' WHERE id=:i", i=run_id))
     assert worker.process_next() == rid and called == [("cabaia", rid)]
     r = db.q("SELECT status, log FROM runs WHERE id=:i", i=rid)[0]
-    assert r["status"] == "done" and "worker Codex" in r["log"]
+    assert r["status"] == "done" and "Picked up by the agent" in r["log"]
     assert worker.process_next() is None
