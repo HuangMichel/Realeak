@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -83,44 +83,44 @@
   <h1>Resale Radar</h1>
   <nav>
     <button id="t-radar" class="on" onclick="tab('radar')">Radar</button>
-    <button id="t-label" onclick="tab('label')">Étiquetage</button>
+    <button id="t-label" onclick="tab('label')">Labeling</button>
   </nav>
 </header>
 <main>
 <!-- ============ RADAR ============ -->
 <section id="v-radar">
   <div class="row">
-    <label>Marque <input type="text" id="brand" value="cabaia" size="12"></label>
-    <button class="btn sec" id="b-cat" onclick="loadCatalog()">Charger le catalogue</button>
-    <button class="btn sec" id="b-col" onclick="collectNow()">Collecter les annonces</button>
-    <button class="btn" id="b-agent" onclick="runAgent()">Lancer l'agent</button>
+    <label>Brand <input type="text" id="brand" value="cabaia" size="12"></label>
+    <button class="btn sec" id="b-cat" onclick="loadCatalog()">Load catalog</button>
+    <button class="btn sec" id="b-col" onclick="collectNow()">Collect listings</button>
+    <button class="btn" id="b-agent" onclick="runAgent()">Run agent</button>
     <span id="status"></span>
   </div>
   <div class="kpis">
-    <div class="kpi"><b id="k-list">-</b><span>annonces d'occasion collectées</span></div>
-    <div class="kpi"><b id="k-match">-</b><span>reconnues dans le catalogue</span></div>
-    <div class="kpi"><b id="k-cat">-</b><span>classées par catégorie</span></div>
-    <div class="kpi hot"><b id="k-new">-</b><span>% revendues neuves (produits non désirés)</span></div>
-    <div class="kpi"><b id="k-unk">-</b><span>non reconnues / à traiter</span></div>
+    <div class="kpi"><b id="k-list">-</b><span>used listings collected</span></div>
+    <div class="kpi"><b id="k-match">-</b><span>matched to the catalog</span></div>
+    <div class="kpi"><b id="k-cat">-</b><span>classified by category</span></div>
+    <div class="kpi hot"><b id="k-new">-</b><span>% resold new (unwanted products)</span></div>
+    <div class="kpi"><b id="k-unk">-</b><span>unmatched / to review</span></div>
   </div>
   <div id="log"></div>
-  <h3 style="margin:6px 0 8px">Par catégorie de produit</h3>
+  <h3 style="margin:6px 0 8px">By product category</h3>
   <table style="margin-bottom:22px">
-    <thead><tr><th>Catégorie</th><th class="n">Annonces</th><th class="n">% revendues neuves</th><th class="n">Prix neuf moyen</th><th class="n">Prix revente moyen</th><th class="n">Décote</th></tr></thead>
-    <tbody id="cat-rows"><tr><td colspan="6" class="hint">Aucune annonce classée pour l'instant.</td></tr></tbody>
+    <thead><tr><th>Category</th><th class="n">Listings</th><th class="n">% resold new</th><th class="n">Avg new price</th><th class="n">Avg resale price</th><th class="n">Discount</th></tr></thead>
+    <tbody id="cat-rows"><tr><td colspan="6" class="hint">No listings classified yet.</td></tr></tbody>
   </table>
-  <h3 style="margin:6px 0 8px">Par référence exacte (quand l'agent l'identifie)</h3>
+  <h3 style="margin:6px 0 8px">By exact reference (when the agent identifies it)</h3>
   <table>
-    <thead><tr><th></th><th>Produit</th><th class="n">Prix neuf</th><th class="n">Annonces</th><th class="n">% revendues neuves</th><th class="n">Décote</th><th>Pays</th></tr></thead>
-    <tbody id="rows"><tr><td colspan="7" class="hint">Aucune donnée. Charge le catalogue, collecte les annonces, puis lance l'agent.</td></tr></tbody>
+    <thead><tr><th></th><th>Product</th><th class="n">New price</th><th class="n">Listings</th><th class="n">% resold new</th><th class="n">Discount</th><th>Country</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="7" class="hint">No data. Load the catalog, collect listings, then run the agent.</td></tr></tbody>
   </table>
 </section>
 
-<!-- ============ ETIQUETAGE ============ -->
+<!-- ============ LABELING ============ -->
 <section id="v-label" class="hide">
   <div class="row">
-    <span class="hint">Suggestion bonne : « ✓ Correct » (ou Entrée). Sinon clique la bonne catégorie, ou le produit exact à droite.</span>
-    <span class="chip" id="lab-count">0 étiquettes</span>
+    <span class="hint">Good suggestion: click "✓ Correct" (or press Enter). Otherwise click the right category, or the exact product on the right.</span>
+    <span class="chip" id="lab-count">0 labels</span>
   </div>
   <div class="lab">
     <div class="left">
@@ -129,14 +129,14 @@
       <div class="guess" id="l-guess"></div>
       <div class="bigrow">
         <button class="btn big" id="b-ok" onclick="labelOk()">✓ Correct</button>
-        <button class="btn warn" onclick="labelIt('NONE')">Pas dans le catalogue</button>
-        <button class="btn sec" onclick="nextLabel()">Passer</button>
+        <button class="btn warn" onclick="labelIt('NONE')">Not in catalog</button>
+        <button class="btn sec" onclick="nextLabel()">Skip</button>
       </div>
-      <div class="hint">Mauvaise catégorie ? Clique la bonne (référence exacte inconnue) :</div>
+      <div class="hint">Wrong category? Click the right one (exact reference unknown):</div>
       <div class="cats" id="l-cats"></div>
     </div>
     <div>
-      <div class="row"><input type="text" id="l-q" placeholder="Chercher dans le catalogue (ex : housse, tote, wallet...)" size="40" oninput="debouncedSearch()"></div>
+      <div class="row"><input type="text" id="l-q" placeholder="Search the catalog (e.g. tote, wallet, backpack...)" size="40" oninput="debouncedSearch()"></div>
       <div class="grid" id="l-grid"></div>
     </div>
   </div>
@@ -190,19 +190,19 @@ async function loadReport() {
 }
 
 async function loadCatalog() {
-  $('b-cat').disabled = true; setStatus('Chargement du catalogue...');
-  try { const r = await api('/api/catalog/' + brand() + '/load', {method:'POST'}); setStatus(r.products + ' produits chargés'); }
-  catch(e) { setStatus('Erreur : ' + e.message); }
+  $('b-cat').disabled = true; setStatus('Loading catalog...');
+  try { const r = await api('/api/catalog/' + brand() + '/load', {method:'POST'}); setStatus(r.products + ' products loaded'); }
+  catch(e) { setStatus('Error: ' + e.message); }
   $('b-cat').disabled = false;
 }
 
 async function collectNow() {
-  $('b-col').disabled = true; setStatus('Collecte Vinted en cours (FR + DE)...');
+  $('b-col').disabled = true; setStatus('Collecting from Vinted (FR + DE)...');
   try {
     const r = await api('/api/collect/' + brand() + '?countries=fr,de&pages=2', {method:'POST'});
     const n = Object.values(r).reduce((a,x) => a + x.new, 0);
-    setStatus(n + ' nouvelles annonces'); await loadReport();
-  } catch(e) { setStatus('Erreur : ' + e.message); }
+    setStatus(n + ' new listings'); await loadReport();
+  } catch(e) { setStatus('Error: ' + e.message); }
   $('b-col').disabled = false;
 }
 
@@ -219,17 +219,17 @@ async function watch(runId) {
       const run = await api('/api/runs/' + runId);
       renderLog(run); loadReport().catch(()=>{});
       const s = run.stats || {};
-      setStatus('Agent : ' + run.status + (s.matched != null ? ' · ' + s.matched + ' reconnues' : ''));
+      setStatus('Agent: ' + run.status + (s.matched != null ? ' · ' + s.matched + ' matched' : ''));
       if (run.status !== 'running' && run.status !== 'queued') { clearInterval(poll); $('b-agent').disabled = false; loadReport().catch(()=>{}); }
-    } catch(e) { setStatus('Erreur : ' + e.message); }
+    } catch(e) { setStatus('Error: ' + e.message); }
   }, 1500);
 }
 async function runAgent() {
-  $('b-agent').disabled = true; setStatus('Démarrage de l\'agent...');
+  $('b-agent').disabled = true; setStatus('Starting agent...');
   try {
     const r = await api('/api/agent/' + brand() + '/run', {method:'POST'});
     $('log').innerHTML = ''; watch(r.run_id);
-  } catch(e) { setStatus('Erreur : ' + e.message); $('b-agent').disabled = false; }
+  } catch(e) { setStatus('Error: ' + e.message); $('b-agent').disabled = false; }
 }
 async function resumeLastRun() {
   try {
@@ -238,10 +238,10 @@ async function resumeLastRun() {
   } catch(e) {}
 }
 
-/* ---------- Étiquetage ---------- */
+/* ---------- Labeling ---------- */
 let cur = null, searchTimer = null;
 async function countLabels() {
-  try { const c = await api('/api/labels/count?brand=' + brand()); $('lab-count').textContent = c.count + ' étiquette' + (c.count > 1 ? 's' : ''); } catch(e) {}
+  try { const c = await api('/api/labels/count?brand=' + brand()); $('lab-count').textContent = c.count + ' label' + (c.count > 1 ? 's' : ''); } catch(e) {}
 }
 let cats = [];
 async function loadCats() { try { cats = await api('/api/categories?brand=' + brand()); } catch(e) { cats = []; } renderCats(); }
@@ -252,20 +252,20 @@ function renderCats() {
   top.push('Autre');
   const rest = cats.map(c => c.category).filter(c => !top.includes(c));
   $('l-cats').innerHTML = top.map(c => `<button class="cat ${c === g ? 'sug' : ''}" data-c="${esc(c)}">${esc(c)}</button>`).join('') +
-    (rest.length ? `<select id="l-more"><option value="">Autres catégories...</option>${rest.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>` : '');
+    (rest.length ? `<select id="l-more"><option value="">Other categories...</option>${rest.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>` : '');
 }
 async function nextLabel() {
   cur = await api('/api/labels/next?brand=' + brand());
   renderCats();
-  if (!cur) { $('l-img').removeAttribute('src'); $('l-title').textContent = 'Plus aucune annonce à étiqueter'; $('l-sub').textContent = ''; $('l-guess').innerHTML = ''; $('b-ok').disabled = true; return; }
+  if (!cur) { $('l-img').removeAttribute('src'); $('l-title').textContent = 'No more listings to label'; $('l-sub').textContent = ''; $('l-guess').innerHTML = ''; $('b-ok').disabled = true; return; }
   $('l-img').src = cur.image_url;
   $('l-title').textContent = cur.title || '';
   $('l-sub').textContent = [cur.country && cur.country.toUpperCase(), cur.condition, cur.price_eur != null && cur.price_eur + ' €'].filter(Boolean).join(' · ');
   const hasGuess = !!(cur.match_product_id || cur.match_category);
   $('b-ok').disabled = !hasGuess;
   $('l-guess').innerHTML = hasGuess
-    ? `${cur.match_product_image ? `<img src="${esc(cur.match_product_image)}${cur.match_product_image.includes('?') ? '&' : '?'}width=160">` : ''}<div><div class="hint">Suggestion de l'agent</div><div>Catégorie : <b>${esc(cur.match_category || '?')}</b></div>${cur.match_product_title ? `<div>${esc(cur.match_product_title)}</div>` : '<div class="hint">(référence exacte non identifiée)</div>'}</div>`
-    : '<div class="hint">Pas de suggestion de l\'agent pour cette annonce.</div>';
+    ? `${cur.match_product_image ? `<img src="${esc(cur.match_product_image)}${cur.match_product_image.includes('?') ? '&' : '?'}width=160">` : ''}<div><div class="hint">Agent suggestion</div><div>Category: <b>${esc(cur.match_category || '?')}</b></div>${cur.match_product_title ? `<div>${esc(cur.match_product_title)}</div>` : '<div class="hint">(exact reference not identified)</div>'}</div>`
+    : '<div class="hint">No agent suggestion for this listing.</div>';
   document.querySelectorAll('.tile').forEach(t => t.classList.toggle('sug', t.dataset.id === cur.match_product_id));
 }
 function debouncedSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(searchProducts, 250); }
@@ -281,11 +281,11 @@ async function postLabel(extra) {
   try {
     await api('/api/labels', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({listing_id: cur.id, ...extra})});
     countLabels(); await nextLabel();
-  } catch(e) { alert('Erreur : ' + e.message); }
+  } catch(e) { alert('Error: ' + e.message); }
   saving = false;
 }
-const labelIt = pid => postLabel({product_id: pid});                       // produit exact (ou 'NONE')
-const labelCat = c => postLabel({product_id: null, category: c});          // catégorie seule
+const labelIt = pid => postLabel({product_id: pid});                       // exact product (or 'NONE')
+const labelCat = c => postLabel({product_id: null, category: c});          // category only
 const labelOk = () => (cur && (cur.match_product_id || cur.match_category))
   ? postLabel({product_id: cur.match_product_id || null, category: cur.match_category || null}) : null;
 $('l-cats').addEventListener('click', e => { const b = e.target.closest('button.cat'); if (b) labelCat(b.dataset.c); });

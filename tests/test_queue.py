@@ -20,7 +20,7 @@ def test_queue_mode_route_and_worker(monkeypatch, tmp_path):
     with TestClient(main.app) as c:
         rid = c.post("/api/agent/cabaia/run").json()["run_id"]
         run = c.get(f"/api/runs/{rid}").json()
-    assert run["status"] == "queued" and run["log"][0]["msg"] == "En attente du worker Codex"
+    assert run["status"] == "queued" and run["log"][0]["msg"] == "Waiting for the Codex worker"
 
     called = []
     import app.agent as agent

@@ -750,12 +750,12 @@ def phase_collect(ctx: Ctx, max_listings=None, max_calls=12) -> dict:
     from app.collect import COUNTRIES, collect_page
 
     if not q("SELECT 1 AS n FROM products WHERE brand=:b LIMIT 1", b=ctx.brand):
-        ctx.log("collect", "Catalogue produits vide : chargement du catalogue Shopify")
+        ctx.log("collect", "Product catalog empty: loading the Shopify catalog")
         n = load_shopify_catalog(ctx.brand)
-        ctx.log("collect", f"Catalogue Shopify charge : {n} produits")
+        ctx.log("collect", f"Shopify catalog loaded: {n} products")
     have = q("SELECT COUNT(*) AS n FROM listings WHERE brand=:b", b=ctx.brand)[0]["n"]
     if max_listings and have >= max_listings:
-        ctx.log("collect", f"Collecte sautee : {have} annonces deja en base (objectif {max_listings})")
+        ctx.log("collect", f"Collection skipped: {have} listings already in database (target {max_listings})")
         return {"calls": 0, "collected_new": 0}
 
     mem_txt = ""
@@ -789,7 +789,7 @@ def phase_collect(ctx: Ctx, max_listings=None, max_calls=12) -> dict:
             except Exception:
                 inp = {}
         if name == "finish_collection":
-            ctx.log("collect", f"Fin de collecte : {inp.get('reason', '')}")
+            ctx.log("collect", f"Collection finished: {inp.get('reason', '')}")
             break
         c = inp.get("country")
         try:
@@ -797,27 +797,27 @@ def phase_collect(ctx: Ctx, max_listings=None, max_calls=12) -> dict:
         except (TypeError, ValueError):
             p = 1
         if calls >= max_calls:
-            ctx.log("collect", "Budget d'appels epuise : collecte arretee")
+            ctx.log("collect", "Call budget exhausted: collection stopped")
             break
         if (c, p) in seen or c not in COUNTRIES:
             notebook.append(f"ERREUR {c} p{p} : deja recuperee ou pays invalide")
             continue
         seen.add((c, p))
         calls += 1
-        ctx.log("collect", f"Appel {calls}/{max_calls} : {c} page {p} - {inp.get('why', '')}")
+        ctx.log("collect", f"Call {calls}/{max_calls}: {c} page {p} - {inp.get('why', '')}")
         try:
             r = collect_page(ctx.brand, c, p, ctx.run_id)
         except Exception as e:  # noqa: BLE001
-            ctx.log("collect", f"Echec {c} p{p} : {str(e)[:150]}")
+            ctx.log("collect", f"Failed {c} p{p}: {str(e)[:150]}")
             notebook.append(f"ERREUR {c} p{p} : {str(e)[:100]}")
             continue
         new_total += r["new"]
         pct = round(100 * r["new"] / r["cards"]) if r["cards"] else 0
-        ctx.log("collect", f"{c} page {p} : {r['cards']} cartes, {r['new']} nouvelles ({pct} %), total {r['total']}")
+        ctx.log("collect", f"{c} page {p}: {r['cards']} cards, {r['new']} new ({pct} %), total {r['total']}")
         _remember_query(ctx, c, p, r)
         notebook.append(f"{c} p{p} : {r['cards']} cartes, {r['new']} nouvelles ({pct} %), total {r['total']}")
         if max_listings and r["total"] >= max_listings:
-            ctx.log("collect", "Objectif d'annonces atteint : collecte arretee")
+            ctx.log("collect", "Listing target reached: collection stopped")
             break
     return {"calls": calls, "collected_new": new_total}
 
@@ -1038,12 +1038,12 @@ def phase_identify(ctx: Ctx, max_listings=None) -> dict:
                 WHERE l.brand=:b AND m.listing_id IS NULL ORDER BY l.last_seen DESC, l.id""", b=ctx.brand)
     if max_listings:
         todo = todo[:max_listings]
-    ctx.log("identify", f"{len(todo)} annonces a identifier ({len(products)} produits au catalogue, memoire "
-            f"{'activee' if ctx.use_memory else 'desactivee'})")
+    ctx.log("identify", f"{len(todo)} listings to identify ({len(products)} catalog products, memory "
+            f"{'enabled' if ctx.use_memory else 'disabled'})")
     mem = Memory.load(ctx.brand) if ctx.use_memory else None
     if mem:
-        ctx.log("identify", f"Memoire chargee : {sum(len(v) for v in mem.aliases.values())} alias, "
-                f"{sum(len(v) for v in mem.exemplars.values())} exemplaires")
+        ctx.log("identify", f"Memory loaded: {sum(len(v) for v in mem.aliases.values())} aliases, "
+                f"{sum(len(v) for v in mem.exemplars.values())} exemplars")
     counters = Counter()
     titles = {l["id"]: l["title"] or "" for l in todo}
 
@@ -1052,19 +1052,19 @@ def phase_identify(ctx: Ctx, max_listings=None) -> dict:
         if r.get("error"):
             counters["errors"] += 1
             if counters["errors"] <= 3:
-                ctx.log("identify", f"Erreur annonce {r['listing_id']} : {r['error']}")
+                ctx.log("identify", f"Listing error {r['listing_id']}: {r['error']}")
         else:
             x(UPSERT_MATCH, lid=r["listing_id"], pid=r["product_id"], conf=r["confidence"], why=r["reasoning"],
               steps=r["steps"], run=ctx.run_id, t=datetime.now(timezone.utc).isoformat(), cat=r.get("category"))
             counters["matched" if r["product_id"] else "unknown"] += 1
             counters["escalated"] += int(r["escalated"])
             if r["escalated"] and counters["escalated"] <= 12:
-                ctx.log("identify", f"Doute sur « {titles.get(r['listing_id'], '')[:50]} » : arbitrage -> "
-                        f"{'produit ' + str(r['product_id']) if r['product_id'] else 'inconnu'} "
-                        f"(confiance {r['confidence']:.2f}) {r['reasoning'][:90]}")
+                ctx.log("identify", f"Doubt on \"{titles.get(r['listing_id'], '')[:50]}\": arbitration -> "
+                        f"{'product ' + str(r['product_id']) if r['product_id'] else 'unknown'} "
+                        f"(confidence {r['confidence']:.2f}) {r['reasoning'][:90]}")
         if counters["done"] % 10 == 0 or counters["done"] == len(todo):
-            ctx.log("identify", f"{counters['done']}/{len(todo)} : {counters['matched']} identifiees, "
-                    f"{counters['unknown']} inconnues, {counters['escalated']} arbitrees par le modele expert")
+            ctx.log("identify", f"{counters['done']}/{len(todo)}: {counters['matched']} identified, "
+                    f"{counters['unknown']} unknown, {counters['escalated']} arbitrated by the expert model")
             ctx.save_stats(ctx.stats(listings_total=len(todo), matched=counters["matched"],
                                      unknown=counters["unknown"], escalated=counters["escalated"]))
 
@@ -1120,9 +1120,9 @@ def phase_learn(ctx: Ctx) -> int:
     n_lab = sum(1 for e in ev if e["src"] == "label")
     mem = derive_memory(ev, {p["id"]: p for p in products}, brand_words_for(ctx.brand))
     added = persist_memory(ctx.brand, mem)
-    ctx.log("learn", f"Apprentissage : {len(ev)} cas confirmes ({n_lab} par etiquettes humaines) -> "
-            f"{added} nouvelles memoires ({sum(len(v) for v in mem.aliases.values())} alias, "
-            f"{sum(len(v) for v in mem.exemplars.values())} exemplaires au total)")
+    ctx.log("learn", f"Learning: {len(ev)} confirmed cases ({n_lab} from human labels) -> "
+            f"{added} new memories ({sum(len(v) for v in mem.aliases.values())} aliases, "
+            f"{sum(len(v) for v in mem.exemplars.values())} exemplars in total)")
     return added
 
 
@@ -1132,33 +1132,33 @@ def phase_insights(ctx: Ctx) -> list[str]:
                 FROM matches m JOIN listings l ON l.id=m.listing_id JOIN products p ON p.id=m.product_id
                 WHERE l.brand=:b AND m.product_id IS NOT NULL""", b=ctx.brand)
     if not rows:
-        ctx.log("insights", "Aucune annonce identifiee : pas d'insights")
+        ctx.log("insights", "No identified listing: no insights")
         return []
     agg = aggregate_products(rows)
     n_all = len(rows)
     new_all = sum(1 for r in rows if r["condition_norm"] in ("new_with_tags", "new_without_tags"))
-    payload = {"annonces_identifiees": n_all, "pct_neuf_global": round(100 * new_all / n_all),
-               "produits_distincts": len(agg), "top_produits": agg[:25]}
-    prompt = ("Donnees de revente Vinted de la marque " + ctx.brand + " (par produit : n annonces, % neuf avec etiquette, "
-              "% neuf sans etiquette, prix moyen de revente vs prix neuf catalogue) :\n" +
+    payload = {"identified_listings": n_all, "global_pct_new": round(100 * new_all / n_all),
+               "distinct_products": len(agg), "top_products": agg[:25]}
+    prompt = ("Vinted resale data for the brand " + ctx.brand + " (per product: n listings, % new with tags, "
+              "% new without tags, average resale price vs catalog new price):\n" +
               json.dumps(payload, ensure_ascii=False) +
-              "\n\nRedige 3 a 5 insights en francais pour l'equipe produit de la marque : produits indesirables "
-              "(beaucoup de neufs revendus = surstock, cadeaux non voulus, mauvais coloris), produits qui gardent leur "
-              "valeur, points d'attention. Chiffres a l'appui, prudence si n est petit. Reponds uniquement par des "
-              "puces, une par ligne, commencant par '- '.")
+              "\n\nWrite 3 to 5 insights in English for the brand's product team: unwanted products "
+              "(many new items resold = overstock, unwanted gifts, wrong colors), products that hold their "
+              "value, points of attention. Back them with figures, be cautious when n is small. Answer only with "
+              "bullet points, one per line, starting with '- '.")
     if use_codex():
-        r = _cx(ctx, SMART, "Tu es analyste e-commerce pour une marque de maroquinerie/bagagerie.\n\n" + prompt.replace(
-            "Reponds uniquement par des puces, une par ligne, commencant par '- '.",
-            "Reponds en JSON : insight_1 a insight_5 = une phrase d'analyse chiffree en francais chacune "
-            "(insight_4 et insight_5 peuvent etre vides)."), [], INSIGHTS_SCHEMA)
+        r = _cx(ctx, SMART, "You are an e-commerce analyst for a leather goods / luggage brand.\n\n" + prompt.replace(
+            "Answer only with bullet points, one per line, starting with '- '.",
+            "Answer in JSON: insight_1 to insight_5 = one quantified analysis sentence in English each "
+            "(insight_4 and insight_5 may be empty)."), [], INSIGHTS_SCHEMA)
         bullets = [str(v).replace("**", "").strip() for k, v in sorted((r or {}).items()) if str(v).strip()][:5]
     else:
-        resp = llm(ctx, SMART, "Tu es analyste e-commerce pour une marque de maroquinerie/bagagerie.",
+        resp = llm(ctx, SMART, "You are an e-commerce analyst for a leather goods / luggage brand.",
                    prompt, max_tokens=8000)
         text = resp.text
         bullets = [re.sub(r"^[-*•]\s*", "", l).strip() for l in text.splitlines() if re.match(r"^\s*[-*•]\s+", l)]
         bullets = [b.replace("**", "") for b in bullets][:5]
-    ctx.log("insights", f"{len(bullets)} insights generes")
+    ctx.log("insights", f"{len(bullets)} insights generated")
     return bullets
 
 
@@ -1167,13 +1167,13 @@ def run_agent(brand: str, run_id: str, use_memory: bool = True, max_listings: in
     ctx = Ctx(brand, run_id, use_memory)
     stats: dict = {}
     try:
-        ctx.log("start", f"Demarrage de l'agent pour {brand} (memoire {'ON' if use_memory else 'OFF'}"
-                f"{f', max {max_listings} annonces' if max_listings else ''})")
+        ctx.log("start", f"Starting agent for {brand} (memory {'ON' if use_memory else 'OFF'}"
+                f"{f', max {max_listings} listings' if max_listings else ''})")
         col = phase_collect(ctx, max_listings)
         ident = phase_identify(ctx, max_listings)
         added = phase_learn(ctx) if use_memory else 0
         if not use_memory:
-            ctx.log("learn", "Memoire desactivee : etape d'apprentissage sautee")
+            ctx.log("learn", "Memory disabled: learning step skipped")
         insights = phase_insights(ctx)
         stats = ctx.stats(listings_total=q("SELECT COUNT(*) AS n FROM listings WHERE brand=:b", b=brand)[0]["n"],
                           matched=ident["matched"], unknown=ident["unknown"], escalated=ident["escalated"],
@@ -1181,10 +1181,10 @@ def run_agent(brand: str, run_id: str, use_memory: bool = True, max_listings: in
                           collect_calls=col["calls"], collected_new=col["collected_new"], insights=insights)
         ctx.save_stats(stats)
         x("UPDATE runs SET status='done', finished_at=:t WHERE id=:i", t=datetime.now(timezone.utc).isoformat(), i=run_id)
-        ctx.log("done", f"Termine en {stats['seconds']} s : {ident['matched']} identifiees, {ident['unknown']} inconnues, "
-                f"{stats['input_tokens']} tokens entree / {stats['output_tokens']} sortie, cout estime {stats['cost_usd']} $")
+        ctx.log("done", f"Done in {stats['seconds']} s: {ident['matched']} identified, {ident['unknown']} unknown, "
+                f"{stats['input_tokens']} input / {stats['output_tokens']} output tokens, estimated cost {stats['cost_usd']} $")
     except Exception as e:  # noqa: BLE001
-        ctx.log("error", f"Erreur : {type(e).__name__}: {str(e)[:300]}")
+        ctx.log("error", f"Error: {type(e).__name__}: {str(e)[:300]}")
         stats = ctx.stats(error=f"{type(e).__name__}: {str(e)[:300]}")
         ctx.save_stats(stats)
         x("UPDATE runs SET status='error', finished_at=:t WHERE id=:i", t=datetime.now(timezone.utc).isoformat(), i=run_id)

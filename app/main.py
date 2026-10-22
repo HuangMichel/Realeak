@@ -44,7 +44,7 @@ def health():
 
 def _brand(brand: str):
     if brand not in catalog.BRANDS:
-        raise HTTPException(404, f"marque inconnue: {brand}")
+        raise HTTPException(404, f"unknown brand: {brand}")
 
 
 @app.post("/api/catalog/{brand}/load")
@@ -168,7 +168,7 @@ def _run(row: dict) -> dict:
 def get_run(run_id: str):
     r = q("SELECT * FROM runs WHERE id=:i", i=run_id)
     if not r:
-        raise HTTPException(404, "run introuvable")
+        raise HTTPException(404, "run not found")
     return _run(r[0])
 
 
@@ -195,14 +195,14 @@ def run_agent_endpoint(brand: str):
     _brand(brand)
     if os.environ.get("AGENT_MODE") == "queue":   # appli hebergee : le worker Codex du PC (python -m app.worker) execute le run
         run_id = uuid.uuid4().hex[:12]
-        log = json.dumps([{"t": now(), "phase": "queue", "msg": "En attente du worker Codex"}], ensure_ascii=False)
+        log = json.dumps([{"t": now(), "phase": "queue", "msg": "Waiting for the Codex worker"}], ensure_ascii=False)
         x("INSERT INTO runs(id, brand, kind, started_at, status, stats, log) VALUES(:i,:b,'agent',:t,'queued','{}',:l)",
           i=run_id, b=brand, t=now(), l=log)
         return {"run_id": run_id}
     try:
         from app.agent import run_agent
     except ImportError:
-        raise HTTPException(501, "app.agent pas encore disponible")
+        raise HTTPException(501, "app.agent not available yet")
     run_id = uuid.uuid4().hex[:12]
     x("INSERT INTO runs(id, brand, kind, started_at, status, stats, log) VALUES(:i,:b,'agent',:t,'running','{}','[]')",
       i=run_id, b=brand, t=now())
@@ -226,16 +226,16 @@ def label_post(body: dict = Body(...)):
     """product_id : id produit | 'NONE' (hors catalogue) | null (categorie seule, reference inconnue)."""
     lid = body.get("listing_id")
     if not lid:
-        raise HTTPException(400, "listing_id requis")
+        raise HTTPException(400, "listing_id required")
     pid = body.get("product_id") or None
     cat = (body.get("category") or "").strip() or None
     if pid and pid != "NONE":
         prod = q("SELECT product_type FROM products WHERE id=:i", i=pid)
         if not prod:
-            raise HTTPException(400, f"produit inconnu: {pid}")
+            raise HTTPException(400, f"unknown product: {pid}")
         cat = prod[0]["product_type"] or cat      # le produit choisi fait foi pour la categorie
     elif not pid and not cat:
-        raise HTTPException(400, "product_id ou category requis")
+        raise HTTPException(400, "product_id or category required")
     x("""INSERT INTO labels(listing_id, product_id, note, created_at, category) VALUES(:l,:p,:n,:t,:c)
          ON CONFLICT (listing_id) DO UPDATE SET product_id=excluded.product_id, note=excluded.note,
          created_at=excluded.created_at, category=excluded.category""",
