@@ -10,7 +10,7 @@ from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import catalog, collect
+from app import brands, catalog, collect
 from app.db import ROOT, init_db, q, x
 from app.db import q as dbq
 
@@ -40,6 +40,37 @@ def slide():
 @app.get("/api/health")
 def health():
     return {"ok": True, "time": now()}
+
+
+def _known_slug(domain: str, name: str) -> str | None:
+    lab = brands.norm(brands.label_of(domain))
+    for slug, cfg in catalog.BRANDS.items():
+        if lab == brands.norm(brands.label_of(brands.registrable(cfg["shop_domain"]))) or brands.norm(name) == brands.norm(cfg["display"]):
+            return slug
+    return None
+
+
+@app.get("/api/brands/search")
+def brands_search(q: str = ""):  # noqa: A002
+    q = q.strip()
+    if len(q) < 2:
+        return {"query": q, "found": False}
+    base = brands.search_brand(q)
+    if not base.get("found"):
+        return base
+    cands = base["candidates"]
+    verdicts = brands.detect_many([c["domain"] for c in cands])
+    results = [{**c, **v, "known_slug": _known_slug(c["domain"], c["name"])} for c, v in zip(cands, verdicts)]
+    for r in results:
+        if r["known_slug"]:
+            r["name"] = catalog.BRANDS[r["known_slug"]]["display"]
+    # a name-matching candidate that IS a shop beats a name-matching one that is not
+    if not results[0]["is_ecommerce"]:
+        shop = next((r for r in results[1:] if r["is_ecommerce"] and r["exact"]), None)
+        if shop:
+            results.remove(shop)
+            results.insert(0, shop)
+    return {"query": q, "found": True, **results[0], "results": results}
 
 
 def _brand(brand: str):

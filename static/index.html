@@ -149,6 +149,20 @@
   .tiles img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; background:var(--tt-platine); display:block; }
   .count { display:inline-block; margin-top:16px; padding:6px 14px; border-radius:99px; background:var(--acc2); box-shadow:inset 0 0 0 1px var(--tt-ok-200); font-size:14px; }
 
+
+  /* brand search */
+  #bsearch { position:relative; margin-bottom:16px; }
+  #bs-dd { position:absolute; left:0; right:0; top:100%; margin-top:6px; z-index:4; background:var(--card); border:1px solid var(--line-strong); border-radius:14px; box-shadow:0 12px 32px #0f0f1026; overflow:hidden; }
+  .bs-msg { padding:12px 16px; color:var(--mut); font-size:14px; }
+  .bs-row { all:unset; box-sizing:border-box; display:flex; gap:12px; align-items:center; width:100%; padding:10px 16px; cursor:pointer; }
+  .bs-row:hover, .bs-row:focus-visible { background:var(--tt-seasalt); }
+  .bs-row img, .bs-card img { width:32px; height:32px; border-radius:8px; background:var(--tt-platine); flex:none; }
+  .bs-row .nm { min-width:0; flex:1; } .bs-row .nm b { display:block; } .bs-row .nm small { color:var(--mut); font-size:12.5px; }
+  .bs-b { flex:none; font-size:12.5px; font-weight:600; padding:2px 10px; border-radius:99px; background:var(--tt-platine); color:var(--ink); }
+  .bs-b.ok { background:var(--tt-ok-100); color:#14532d; } .bs-b.no { background:#fde2e3; color:#8f1d20; }
+  .bs-card { display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:var(--card); border:1px solid var(--line-strong); border-radius:18px; padding:14px 18px; margin-bottom:16px; }
+  .bs-card .nm { flex:1; min-width:200px; } .bs-card .nm a { margin-left:8px; color:var(--mut); font-size:13px; }
+
   @media (max-width:800px){
     header { padding:10px 16px; } .hdr-right { margin-left:0; width:100%; } .hdr-right .btn { flex:1; }
     main { padding:16px 16px 60px; }
@@ -179,6 +193,11 @@
 <main>
 <!-- ============ OVERVIEW ============ -->
 <section id="v-radar">
+  <div id="bsearch">
+    <input type="text" id="bs-q" placeholder="Search a brand… (e.g. KBF, Cabaïa)" oninput="bsInput()" autocomplete="off" aria-label="Search a brand">
+    <div id="bs-dd" class="hide" role="listbox"></div>
+  </div>
+  <div id="bs-card" class="hide"></div>
   <div id="err" class="hide" role="alert"><b>Something went wrong, try again.</b><button class="btn sec" onclick="loadAll()">Reload</button></div>
   <div id="progress" class="hide" aria-live="polite">
     <h3 id="pg-title">Starting…</h3>
@@ -365,6 +384,47 @@ function renderLog(run) {
   if (!run || !(run.log || []).length) return;
   el.innerHTML = run.log.map(l => `<span class="ph">[${esc(l.phase)}]</span> ${esc(l.msg)}`).join('\n');
   el.scrollTop = el.scrollHeight;
+}
+
+/* ---------- Brand search ---------- */
+let bsT = null, bsSeq = 0, bsRes = [];
+const bsBadge = x => x.is_ecommerce
+  ? (x.platform === 'Shopify' && x.product_count
+      ? `<span class="bs-b ok">E-commerce · Shopify · ${x.product_count.toLocaleString('en-US')}${x.product_count_capped ? '+' : ''} products</span>`
+      : `<span class="bs-b">E-commerce${x.platform ? ' · ' + esc(x.platform) : ''}</span>`)
+  : '<span class="bs-b no">Not an e-commerce brand</span>';
+function bsInput() {
+  clearTimeout(bsT);
+  const v = $('bs-q').value.trim();
+  if (v.length < 2) { bsSeq++; $('bs-dd').classList.add('hide'); return; }
+  bsT = setTimeout(() => bsRun(v), 400);
+}
+async function bsRun(v) {
+  const n = ++bsSeq, dd = $('bs-dd');
+  dd.classList.remove('hide'); dd.innerHTML = '<div class="bs-msg">Searching the web…</div>';
+  try {
+    const r = await api('/api/brands/search?q=' + encodeURIComponent(v));
+    if (n !== bsSeq) return;
+    bsRes = r.results || [];
+    dd.innerHTML = bsRes.length ? bsRes.map((x, i) => `<button class="bs-row" data-i="${i}" role="option"><img src="${esc(x.favicon)}" alt="" referrerpolicy="no-referrer"><span class="nm"><b>${esc(x.name)}</b><small>${esc(x.domain)} · ${esc(x.reason)}</small></span>${bsBadge(x)}</button>`).join('')
+      : '<div class="bs-msg">No brand found.</div>';
+  } catch (e) { if (n === bsSeq) dd.innerHTML = '<div class="bs-msg">Search failed, try again.</div>'; }
+}
+$('bs-dd').addEventListener('click', e => { const b = e.target.closest('.bs-row'); if (b) bsPick(+b.dataset.i); });
+document.addEventListener('click', e => { if (!e.target.closest('#bsearch')) $('bs-dd').classList.add('hide'); });
+$('bs-q').addEventListener('keydown', e => { if (e.key === 'Escape') $('bs-dd').classList.add('hide'); });
+function bsPick(i) {
+  const x = bsRes[i]; if (!x) return;
+  $('bs-dd').classList.add('hide'); $('bs-q').value = x.name;
+  const act = !x.is_ecommerce ? ''
+    : x.known_slug ? `<button class="btn" onclick="bsAnalyze('${esc(x.known_slug)}')">Analyze resale on Vinted</button>`
+    : '<span class="hint">Vinted analysis available on request</span>';
+  $('bs-card').className = 'bs-card';
+  $('bs-card').innerHTML = `<img src="${esc(x.favicon)}" alt="" referrerpolicy="no-referrer"><div class="nm"><b>${esc(x.name)}</b><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.domain)}</a><div class="hint">${esc(x.reason)}</div></div>${bsBadge(x)}${act}`;
+}
+function bsAnalyze(slug) {
+  const o = [...$('brand').options].find(o => o.value === slug);
+  if (o) { $('brand').value = slug; onBrand(); window.scrollTo({top: 0, behavior: 'smooth'}); }
 }
 
 /* ---------- Refresh flow ---------- */
