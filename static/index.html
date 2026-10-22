@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resale Radar</title>
+<style>
+  :root { --bg:#f6f5f2; --card:#fff; --ink:#1d1d1f; --mut:#6b6b70; --line:#e4e2dc; --acc:#2a5d4f; --acc2:#e8f1ee; --warn:#c2410c; --bad:#b91c1c; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  header { display:flex; align-items:center; gap:24px; padding:14px 24px; background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+  header h1 { font-size:18px; margin:0; letter-spacing:.2px; }
+  nav button { background:none; border:0; padding:8px 14px; font:inherit; cursor:pointer; border-radius:8px; color:var(--mut); }
+  nav button.on { background:var(--acc2); color:var(--acc); font-weight:600; }
+  main { max-width:1200px; margin:0 auto; padding:20px 24px 60px; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+  input[type=text] { padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; background:#fff; }
+  button.btn { padding:9px 16px; border:1px solid var(--acc); background:var(--acc); color:#fff; border-radius:8px; font:inherit; cursor:pointer; font-weight:600; }
+  button.btn.sec { background:#fff; color:var(--acc); }
+  button.btn.warn { background:#fff; color:var(--warn); border-color:var(--warn); }
+  button.btn:disabled { opacity:.5; cursor:default; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:18px; }
+  .kpi { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .kpi b { display:block; font-size:28px; }
+  .kpi span { color:var(--mut); font-size:13px; }
+  .kpi.hot b { color:var(--warn); }
+  #log { background:#14201c; color:#cfe8dd; font:12.5px/1.5 ui-monospace,Consolas,monospace; border-radius:10px; padding:12px 14px; max-height:240px; overflow:auto; margin-bottom:18px; display:none; white-space:pre-wrap; }
+  #log .ph { color:#8bd3b4; }
+  #status { color:var(--mut); font-size:13px; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  th,td { padding:8px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--mut); background:#faf9f6; }
+  td.n,th.n { text-align:right; font-variant-numeric:tabular-nums; }
+  td img { width:54px; height:54px; object-fit:cover; border-radius:8px; background:#eee; display:block; }
+  .bar { display:inline-block; height:8px; border-radius:4px; background:var(--warn); vertical-align:middle; margin-left:6px; }
+  .chip { display:inline-block; padding:1px 7px; border-radius:99px; background:var(--acc2); color:var(--acc); font-size:12px; margin-right:3px; }
+  .hide { display:none; }
+  /* labeling */
+  .lab { display:grid; grid-template-columns:minmax(280px,420px) 1fr; gap:24px; align-items:start; }
+  .lab .left img { width:100%; border-radius:12px; background:#eee; }
+  .lab .meta { margin:10px 0; }
+  .lab .meta h3 { margin:0 0 4px; font-size:17px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; max-height:640px; overflow:auto; padding:2px; }
+  .tile { background:var(--card); border:2px solid var(--line); border-radius:10px; padding:6px; cursor:pointer; text-align:center; font-size:11.5px; }
+  .tile:hover { border-color:var(--acc); }
+  .tile img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; background:#eee; }
+  .tile.sug { border-color:var(--acc); background:var(--acc2); }
+  .hint { color:var(--mut); font-size:13px; }
+  @media (max-width:800px){ .lab { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Resale Radar</h1>
+  <nav>
+    <button id="t-radar" class="on" onclick="tab('radar')">Radar</button>
+    <button id="t-label" onclick="tab('label')">Étiquetage</button>
+  </nav>
+</header>
+<main>
+<!-- ============ RADAR ============ -->
+<section id="v-radar">
+  <div class="row">
+    <label>Marque <input type="text" id="brand" value="cabaia" size="12"></label>
+    <button class="btn sec" id="b-cat" onclick="loadCatalog()">Charger le catalogue</button>
+    <button class="btn sec" id="b-col" onclick="collectNow()">Collecter les annonces</button>
+    <button class="btn" id="b-agent" onclick="runAgent()">Lancer l'agent</button>
+    <span id="status"></span>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><b id="k-list">-</b><span>annonces d'occasion collectées</span></div>
+    <div class="kpi"><b id="k-match">-</b><span>reconnues dans le catalogue</span></div>
+    <div class="kpi hot"><b id="k-new">-</b><span>% revendues neuves (produits non désirés)</span></div>
+    <div class="kpi"><b id="k-unk">-</b><span>non reconnues / à traiter</span></div>
+  </div>
+  <div id="log"></div>
+  <table>
+    <thead><tr><th></th><th>Produit</th><th class="n">Prix neuf</th><th class="n">Annonces</th><th class="n">% revendues neuves</th><th class="n">Décote</th><th>Pays</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="7" class="hint">Aucune donnée. Charge le catalogue, collecte les annonces, puis lance l'agent.</td></tr></tbody>
+  </table>
+</section>
+
+<!-- ============ ETIQUETAGE ============ -->
+<section id="v-label" class="hide">
+  <div class="row">
+    <span class="hint">Pour chaque annonce, clique sur le vrai produit du catalogue (ou « Pas dans le catalogue »).</span>
+    <span class="chip" id="lab-count">0 étiquettes</span>
+  </div>
+  <div class="lab">
+    <div class="left">
+      <img id="l-img" alt="" referrerpolicy="no-referrer">
+      <div class="meta"><h3 id="l-title">-</h3><div id="l-sub" class="hint"></div><div id="l-guess" class="hint"></div></div>
+      <button class="btn warn" onclick="labelIt('NONE')">Pas dans le catalogue</button>
+      <button class="btn sec" onclick="nextLabel()">Passer</button>
+    </div>
+    <div>
+      <div class="row"><input type="text" id="l-q" placeholder="Chercher dans le catalogue (ex : housse, tote, wallet...)" size="40" oninput="debouncedSearch()"></div>
+      <div class="grid" id="l-grid"></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brand = () => ($('brand').value.trim().toLowerCase() || 'cabaia');
+const FLAG = {fr:'FR', de:'DE', nl:'NL', it:'IT', es:'ES', be:'BE'};
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) { let m = r.status; try { m = (await r.json()).detail || m; } catch(e){} throw new Error(m); }
+  return r.json();
+}
+function setStatus(t) { $('status').textContent = t || ''; }
+
+function tab(t) {
+  for (const k of ['radar','label']) { $('v-'+k).classList.toggle('hide', k!==t); $('t-'+k).classList.toggle('on', k===t); }
+  if (t === 'label') { nextLabel(); searchProducts(); countLabels(); }
+}
+
+/* ---------- Radar ---------- */
+async function loadReport() {
+  const d = await api('/api/report/' + brand());
+  const t = d.totals;
+  $('k-list').textContent = t.listings;
+  $('k-match').textContent = t.listings ? t.matched + ' (' + Math.round(100*t.matched/t.listings) + ' %)' : '-';
+  $('k-new').textContent = t.matched ? t.pct_new + ' %' : '-';
+  $('k-unk').textContent = t.unknown + t.unmatched;
+  if (!d.products.length) return;
+  $('rows').innerHTML = d.products.map(p => `<tr>
+    <td>${p.image_url ? `<img loading="lazy" src="${esc(p.image_url)}${p.image_url.includes('?') ? '&' : '?'}width=120">` : ''}</td>
+    <td>${esc(p.title)}</td>
+    <td class="n">${p.price_eur != null ? p.price_eur.toFixed(0) + ' €' : '-'}</td>
+    <td class="n"><b>${p.n_listings}</b></td>
+    <td class="n">${p.pct_new} % <span class="hint">(${p.n_new_with_tags + p.n_new_without_tags})</span><span class="bar" style="width:${Math.round(p.pct_new*0.6)}px"></span></td>
+    <td class="n">${p.discount_pct != null ? p.discount_pct + ' %' : '-'}</td>
+    <td>${Object.entries(p.countries).map(([c,n]) => `<span class="chip">${FLAG[c]||c} ${n}</span>`).join('')}</td>
+  </tr>`).join('');
+}
+
+async function loadCatalog() {
+  $('b-cat').disabled = true; setStatus('Chargement du catalogue...');
+  try { const r = await api('/api/catalog/' + brand() + '/load', {method:'POST'}); setStatus(r.products + ' produits chargés'); }
+  catch(e) { setStatus('Erreur : ' + e.message); }
+  $('b-cat').disabled = false;
+}
+
+async function collectNow() {
+  $('b-col').disabled = true; setStatus('Collecte Vinted en cours (FR + DE)...');
+  try {
+    const r = await api('/api/collect/' + brand() + '?countries=fr,de&pages=2', {method:'POST'});
+    const n = Object.values(r).reduce((a,x) => a + x.new, 0);
+    setStatus(n + ' nouvelles annonces'); await loadReport();
+  } catch(e) { setStatus('Erreur : ' + e.message); }
+  $('b-col').disabled = false;
+}
+
+let poll = null;
+function renderLog(run) {
+  const el = $('log'); el.style.display = 'block';
+  el.innerHTML = (run.log || []).map(l => `<span class="ph">[${esc(l.phase)}]</span> ${esc(l.msg)}`).join('\n');
+  el.scrollTop = el.scrollHeight;
+}
+async function watch(runId) {
+  clearInterval(poll);
+  poll = setInterval(async () => {
+    try {
+      const run = await api('/api/runs/' + runId);
+      renderLog(run); loadReport().catch(()=>{});
+      const s = run.stats || {};
+      setStatus('Agent : ' + run.status + (s.matched != null ? ' · ' + s.matched + ' reconnues' : ''));
+      if (run.status !== 'running') { clearInterval(poll); $('b-agent').disabled = false; loadReport().catch(()=>{}); }
+    } catch(e) { setStatus('Erreur : ' + e.message); }
+  }, 1500);
+}
+async function runAgent() {
+  $('b-agent').disabled = true; setStatus('Démarrage de l\'agent...');
+  try {
+    const r = await api('/api/agent/' + brand() + '/run', {method:'POST'});
+    $('log').innerHTML = ''; watch(r.run_id);
+  } catch(e) { setStatus('Erreur : ' + e.message); $('b-agent').disabled = false; }
+}
+async function resumeLastRun() {
+  try {
+    const runs = await api('/api/runs?brand=' + brand());
+    if (runs.length) { renderLog(runs[0]); if (runs[0].status === 'running') { $('b-agent').disabled = true; watch(runs[0].id); } }
+  } catch(e) {}
+}
+
+/* ---------- Étiquetage ---------- */
+let cur = null, searchTimer = null;
+async function countLabels() {
+  try { const c = await api('/api/labels/count?brand=' + brand()); $('lab-count').textContent = c.count + ' étiquette' + (c.count > 1 ? 's' : ''); } catch(e) {}
+}
+async function nextLabel() {
+  cur = await api('/api/labels/next?brand=' + brand());
+  if (!cur) { $('l-img').removeAttribute('src'); $('l-title').textContent = 'Plus aucune annonce à étiqueter'; $('l-sub').textContent = ''; $('l-guess').textContent = ''; return; }
+  $('l-img').src = cur.image_url;
+  $('l-title').textContent = cur.title || '';
+  $('l-sub').textContent = [cur.country && cur.country.toUpperCase(), cur.condition, cur.price_eur != null && cur.price_eur + ' €'].filter(Boolean).join(' · ');
+  $('l-guess').textContent = cur.match_product_title ? 'Suggestion de l\'agent : ' + cur.match_product_title : '';
+  document.querySelectorAll('.tile').forEach(t => t.classList.toggle('sug', t.dataset.id === cur.match_product_id));
+}
+function debouncedSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(searchProducts, 250); }
+async function searchProducts() {
+  const rows = await api('/api/products?brand=' + brand() + '&q=' + encodeURIComponent($('l-q').value));
+  $('l-grid').innerHTML = rows.map(p => `<div class="tile ${cur && cur.match_product_id === p.id ? 'sug' : ''}" data-id="${esc(p.id)}" onclick="labelIt('${esc(p.id)}')">
+      <img loading="lazy" src="${esc(p.image_url || '')}${(p.image_url||'').includes('?') ? '&' : '?'}width=240"><div>${esc(p.title)}</div></div>`).join('');
+}
+async function labelIt(pid) {
+  if (!cur) return;
+  await api('/api/labels', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({listing_id: cur.id, product_id: pid})});
+  countLabels(); nextLabel();
+}
+
+loadReport().catch(()=>{}); resumeLastRun();
+</script>
+</body>
+</html>
