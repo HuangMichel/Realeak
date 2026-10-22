@@ -287,7 +287,7 @@ function render() {
     $('h-sub').textContent = 'Click Refresh to start.';
   } else {
     $('h-title').innerHTML = `<em>${Math.round(100*nw/tot)}%</em> of your Vinted listings are brand new`;
-    $('h-sub').textContent = `${tags} still have their tags`;
+    $('h-sub').textContent = `${tags} still have their tags · based on ${tot} of ${n} listings analyzed`;
   }
   const done = RUNS.find(r => r.status === 'done');
   $('h-upd').textContent = done ? 'Updated ' + new Date((done.finished_at || done.started_at)).toLocaleString('en-GB', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
@@ -354,12 +354,13 @@ function renderProducts() {
 function renderLog(run) {
   const el = $('log');
   if (!run || !(run.log || []).length) return;
-  el.innerHTML = run.log.map(l => `<span class="ph">[${esc(l.phase)}]</span> ${esc(l.msg)}`).join('\n');
+  const clean = m => String(m).replace(/Pris en charge par le worker Codex/g, 'Picked up by the agent worker').replace(/Codex worker/g, 'agent').replace(/Codex/g, 'the agent');
+  el.innerHTML = run.log.map(l => `<span class="ph">[${esc(l.phase)}]</span> ${esc(clean(l.msg))}`).join('\n');
   el.scrollTop = el.scrollHeight;
 }
 
 /* ---------- Brand search ---------- */
-let bsT = null, bsSeq = 0, bsRes = [];
+let bsT = null, bsSeq = 0, bsRes = [], bsLast = null;
 const bsBadge = x => x.is_ecommerce
   ? (x.platform === 'Shopify' && x.product_count
       ? `<span class="bs-b ok">Shopify · ${x.product_count.toLocaleString('en-US')}${x.product_count_capped ? '+' : ''} products</span>`
@@ -373,18 +374,27 @@ function bsInput() {
 }
 async function bsRun(v) {
   const n = ++bsSeq, dd = $('bs-dd');
+  bsRes = []; bsLast = null;
   dd.classList.remove('hide'); dd.innerHTML = '<div class="bs-msg">Searching…</div>';
   try {
     const r = await api('/api/brands/search?q=' + encodeURIComponent(v));
     if (n !== bsSeq) return;
-    bsRes = r.results || [];
+    bsRes = r.results || []; bsLast = v;
     dd.innerHTML = bsRes.length ? bsRes.map((x, i) => `<button class="bs-row" data-i="${i}" role="option"><img src="${esc(x.favicon)}" alt="" referrerpolicy="no-referrer"><span class="nm"><b>${esc(x.name)}</b><small>${esc(x.domain)}</small></span>${bsBadge(x)}</button>`).join('')
       : '<div class="bs-msg">No brand found.</div>';
   } catch (e) { if (n === bsSeq) dd.innerHTML = '<div class="bs-msg">Search failed.</div>'; }
 }
 $('bs-dd').addEventListener('click', e => { const b = e.target.closest('.bs-row'); if (b) bsPick(+b.dataset.i); });
 document.addEventListener('click', e => { if (!e.target.closest('#bsearch')) $('bs-dd').classList.add('hide'); });
-$('bs-q').addEventListener('keydown', e => { if (e.key === 'Escape') $('bs-dd').classList.add('hide'); });
+$('bs-q').addEventListener('keydown', async e => {
+  if (e.key === 'Escape') $('bs-dd').classList.add('hide');
+  else if (e.key === 'Enter') {
+    e.preventDefault(); clearTimeout(bsT);
+    const v = $('bs-q').value.trim(); if (v.length < 2) return;
+    if (bsLast !== v) await bsRun(v);
+    if ($('bs-q').value.trim() === v) bsPick(0);
+  }
+});
 function bsPick(i) {
   const x = bsRes[i]; if (!x) return;
   $('bs-dd').classList.add('hide'); $('bs-q').value = x.name;
