@@ -18,6 +18,7 @@ WHERE IT LIVES (Aiven for PostgreSQL)
 HOW IT FLOWS
 Refresh -> Keenable fetches Vinted -> listings stored in PostgreSQL -> the agent identifies each photo with OpenAI vision and writes matches + memory -> the dashboard on Aiven Runtime reads the tables
 
-NUMBERS
-- First full run (22 Oct 2026): 315 listings, 57.8% resold new (182), 8.7 minutes, $0.29 (about $0.001 per listing).
-- Live now: 382 listings in the database, 227 of them new (59.4%).
+NUMBERS (22 Oct 2026)
+- Live collection: 1,094 Cabaia listings on Vinted (FR, DE, IT, ES, NL, BE), 25 pages fetched in parallel through Keenable in about 1 minute.
+- 608 of them are brand new (55.6%), 314 still with their tags (28.7%).
+- Agent run on the first 315 listings: 8.7 minutes, $0.29 (about $0.001 per listing) via the OpenAI API.
