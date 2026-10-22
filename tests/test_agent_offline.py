@@ -1,4 +1,5 @@
 """Tests purs (sans reseau, sans base) du coeur agent."""
+import json
 import sys
 from pathlib import Path
 
@@ -123,6 +124,7 @@ def test_identify_cascade_paging_and_escalation(monkeypatch):
     """Client factice : page 1 = aucun candidat, page 2 = candidat peu sur -> arbitrage -> reponse finale."""
     import json
     from types import SimpleNamespace as NS
+    monkeypatch.setenv("LLM_BACKEND", "openai")
     monkeypatch.setenv("OPENAI_MODEL_FAST", "m-fast")
     monkeypatch.setenv("OPENAI_MODEL_SMART", "m-smart")
     monkeypatch.setenv("OPENAI_API_SMART", "chat")
@@ -156,3 +158,43 @@ def test_identify_cascade_paging_and_escalation(monkeypatch):
     assert [c[0] for c in calls] == ["m-fast", "m-fast", "m-fast", "m-smart"]
     t = ctx.usage.totals()
     assert t["llm_calls"] == 4 and t["input_tokens"] == 400 and t["output_tokens"] == 40
+
+
+def test_identify_codex_one_call_then_escalation(monkeypatch):
+    monkeypatch.delenv("CODEX_IDENT_ROLE", raising=False)
+    """Backend Codex : 1 appel combine FAST (8 candidats), puis 1 appel SMART (4 candidats x 2 images) si confiance < 0.75."""
+    monkeypatch.setenv("LLM_BACKEND", "codex")
+    prods = [{"id": f"P{i}", "title": f"Pochette Print{i}", "product_type": "Pochette", "price_eur": 30,
+              "image_url": None, "images": json.dumps([f"https://x/{i}a.jpg", f"https://x/{i}b.jpg"])} for i in range(20)]
+    idx = Index(prods, BW)
+    calls = []
+
+    def fake(prompt, images, schema, model, on_usage=None, effort="low"):
+        calls.append((model, len(images), prompt.count("Candidat ")))
+        assert schema["additionalProperties"] is False and set(schema["required"]) == set(schema["properties"])
+        if on_usage:
+            on_usage(100, 10)
+        if model == "gpt-6-luna":
+            return {"category": "pochette", "candidate": 4, "confidence": 0.6, "reason": "doute"}
+        return {"category": "Autre", "candidate": 1, "confidence": 0.9, "reason": "sur"}
+
+    monkeypatch.setattr(agent.llm_codex, "codex_json", fake)
+    monkeypatch.setattr(agent.llm_codex, "fetch_image", lambda u: bytes([255, 216, 255, 0]))
+    ctx = agent.Ctx("cabaia", None, use_memory=False)
+    res = agent.identify_one(ctx, {"id": "L1", "title": "Pochette Print3", "image_url": "https://v/l.webp"}, idx, None)
+    assert [c[0] for c in calls] == ["gpt-6-luna", "gpt-6.1-sol"]
+    assert calls[0][2] == 8 and calls[0][1] == 9          # 8 candidats x 1 image + annonce
+    assert calls[1][2] == 4 and calls[1][1] == 9          # 4 candidats x 2 images + annonce
+    assert res["escalated"] and res["steps"] == 2 and res["confidence"] == 0.9 and res["product_id"] is not None
+    assert res["category"] == "Pochette"                   # la famille du produit identifie fait foi
+    t = ctx.usage.totals()
+    assert t["llm_calls"] == 2 and t["cost_usd"] == 0.0 and t["calls_fast"] == 1 and t["calls_smart"] == 1
+
+
+def test_identify_codex_failure_is_an_error_not_a_guess(monkeypatch):
+    monkeypatch.setenv("LLM_BACKEND", "codex")
+    idx = Index([{"id": "P1", "title": "Pochette A", "product_type": "Pochette", "images": "[]"}], BW)
+    monkeypatch.setattr(agent.llm_codex, "codex_json", lambda *a, **k: None)
+    ctx = agent.Ctx("cabaia", None, use_memory=False)
+    out = agent.identify_batch(ctx, [{"id": "L1", "title": "Pochette A", "image_url": None}], idx, lambda l: None)
+    assert "error" in out[0]

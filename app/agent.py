@@ -22,7 +22,7 @@ import httpx
 import openai
 from dotenv import dotenv_values
 
-from app import db
+from app import db, llm_codex
 from app.db import q, x
 
 FAST, SMART = "fast", "smart"          # roles ; les noms de modeles viennent de l'environnement
@@ -63,9 +63,19 @@ def _price(role: str) -> tuple[float, float]:
         return 0.0, 0.0
 
 
+def use_codex() -> bool:
+    """LLM_BACKEND=codex (defaut) : CLI Codex = abonnement ChatGPT, zero API facturee ; LLM_BACKEND=openai : SDK OpenAI."""
+    return (_env("LLM_BACKEND") or "codex").lower() != "openai"
+
+
+def codex_model(role: str) -> str:
+    return (_env("OPENAI_MODEL_FAST" if role == FAST else "OPENAI_MODEL_SMART")
+            or ("gpt-6-luna" if role == FAST else "gpt-6.1-sol"))
+
+
 SHORTLIST_K = int(_env("SHORTLIST_K", "8") or 8)   # candidats par page (par defaut 8 : top 8 par score texte)
 MAX_PAGES = 3                                        # pages de candidats parcourues tant qu'aucun ne correspond
-ESCALATE_BELOW = 0.75
+ESCALATE_BELOW = float(_env("ESCALATE_BELOW", "0.75") or 0.75)
 UNKNOWN_BELOW = 0.5
 LEARN_MIN_CONF = 0.85
 
@@ -340,7 +350,8 @@ class Usage:
             return {"llm_calls": sum(v[2] for v in self.by_role.values()),
                     "input_tokens": sum(v[0] for v in self.by_role.values()),
                     "output_tokens": sum(v[1] for v in self.by_role.values()),
-                    "cost_usd": round(sum(estimate_cost(r, v[0], v[1]) for r, v in self.by_role.items()), 4),
+                    "cost_usd": 0.0 if use_codex() else round(
+                        sum(estimate_cost(r, v[0], v[1]) for r, v in self.by_role.items()), 4),
                     "calls_fast": self.by_role[FAST][2] if FAST in self.by_role else 0,
                     "calls_smart": self.by_role[SMART][2] if SMART in self.by_role else 0}
 
@@ -382,8 +393,10 @@ class Ctx:
     def stats(self, **extra) -> dict:
         s = self.usage.totals()
         s["seconds"] = round(time.time() - self.t0, 1)
+        s["backend"] = "codex" if use_codex() else "openai"
         try:
-            s["models"] = {"fast": model_name(FAST), "smart": model_name(SMART)}
+            mn = codex_model if use_codex() else model_name
+            s["models"] = {"fast": mn(FAST), "smart": mn(SMART)}
         except Exception:
             pass
         s.update(extra)
@@ -589,6 +602,127 @@ def image_block(url, cache=True, detail="low"):
     return {"type": "image_url", "image_url": {"url": d, "detail": detail}} if d else None
 
 
+# --------------------------------------------------------------------------- backend Codex (LLM_BACKEND=codex)
+CODEX_COLLECT_TURNS = 6
+
+
+def _strict(props: dict) -> dict:
+    return {"type": "object", "properties": props, "required": list(props), "additionalProperties": False}
+
+
+COLLECT_SCHEMA = _strict({"action": {"type": "string", "enum": ["fetch", "finish"]},
+                          "country": {"type": ["string", "null"]}, "page": {"type": ["integer", "null"]},
+                          "reason": {"type": "string"}})
+def _ident_schema(idx) -> dict:
+    """category = enum des familles du catalogue + 'Autre' (le modele ne peut pas inventer une famille)."""
+    return _strict({"category": {"type": "string", "enum": list(idx.type_names.values()) + ["Autre"]},
+                    "candidate": {"type": ["integer", "null"]}, "confidence": {"type": "number"},
+                    "reason": {"type": "string"}})
+
+
+# champs fixes plutot qu'un tableau : mesure du 22/10, le modele renvoyait `{"insights": []}` avec un tableau
+INSIGHTS_SCHEMA = _strict({f"insight_{i}": {"type": "string"} for i in range(1, 6)})
+
+
+def _cx(ctx, role, prompt, images, schema, effort="low"):
+    """Un appel Codex (2 essais) ; comptabilise les tokens dans ctx.usage ; None si echec."""
+    for _ in range(2):
+        r = llm_codex.codex_json(prompt, images, schema, codex_model(role), effort=effort,
+                                 on_usage=lambda i, o: ctx.usage.add(role, i, o))
+        if r is not None:
+            return r
+    return None
+
+
+def _cx_pick(ctx, role, listing, cands, idx, mem, per_cand, skip_ids, effort="low"):
+    """Un appel Codex d'identification : annonce + images candidats -> dict(category, product_id, confidence, reason)|None."""
+    urls = [[sized(u, 400) for u in _product_images(c)[:per_cand]] for c in cands]
+    lurl = listing.get("image_url")
+    flat = sorted({u for us in urls for u in us} | ({lurl} if lurl else set()))
+    got = dict(zip(flat, _PREFETCH.map(llm_codex.fetch_image, flat)))
+    images, lines = [], []
+    if got.get(lurl):
+        images.append(got[lurl])
+    head = "Image 1 = photo de l'annonce Vinted." if images else "(photo de l'annonce indisponible : base-toi sur le titre)"
+    for i, (c, us) in enumerate(zip(cands, urls), 1):
+        nums = []
+        for u in us:
+            if got.get(u):
+                images.append(got[u])
+                nums.append(str(len(images)))
+        lines.append(f"Candidat {i} | product_id={c['id']} | {c['title']} | famille : {c.get('product_type') or '?'} | "
+                     f"prix neuf : {_fmt_price(c.get('price_eur'))} EUR | " +
+                     (f"image(s) {', '.join(nums)}" if nums else "photo indisponible"))
+    mem_lines = []
+    if ctx.use_memory and mem is not None:
+        for L, ex in mem.exemplars_for([(i, c["id"]) for i, c in enumerate(cands, 1)], skip_ids, n=2):
+            b = llm_codex.fetch_image(ex["image_url"])
+            if b:
+                images.append(b)
+                mem_lines.append(f"MEMOIRE : image {len(images)} = une annonce deja confirmee comme etant le candidat {L}.")
+                ctx.hit(ex["rowid"])
+    prompt = (f"Tu identifies un article de seconde main revendu sur Vinted. {head}\n"
+              f"ANNONCE : titre : {listing['title']} | etat : {listing.get('condition') or listing.get('condition_norm') or '?'}"
+              f" | prix : {_fmt_price(listing.get('price_eur'))} EUR (pays {listing.get('country')})\n"
+              "CANDIDATS DU CATALOGUE (photos produit officielles, images numerotees dans l'ordre des fichiers joints) :\n" +
+              "\n".join(lines + mem_lines) + "\nFamilles du catalogue (nombre de produits) : " + idx.type_prompt +
+              "\nTACHE : category = famille du catalogue de l'article, copiee exactement dans la liste, ou 'Autre' ; "
+              "candidate = le NUMERO (1 a " + str(len(cands)) + ") du candidat qui est le meme produit : compare "
+              "l'imprime/coloris et la forme de l'annonce a CHAQUE candidat ; si l'un d'eux a le meme imprime et la meme forme, "
+              "renvoie son numero (les marques sur la photo ne sont pas necessaires) ; null seulement si AUCUN candidat n'a "
+              "le meme imprime et la meme forme ; confidence = 0 a 1 (0.9+ certain, <0.5 incertain) ; "
+              "reason = une phrase courte en francais citant le candidat retenu. Reponds uniquement en JSON.")
+    r = _cx(ctx, role, prompt, images, _ident_schema(idx), effort)
+    if r is None:
+        return None
+    k = r.get("candidate")   # numero du candidat (1..N) : plus fiable qu'un identifiant recopie par le modele
+    pid = cands[k - 1]["id"] if isinstance(k, int) and not isinstance(k, bool) and 1 <= k <= len(cands) else None
+    try:
+        conf = max(0.0, min(1.0, float(r.get("confidence", 0))))
+    except (TypeError, ValueError):
+        conf = 0.0
+    return {"category": idx.type_names.get(norm(r.get("category"))) or "Autre", "product_id": pid,
+            "confidence": conf, "reason": str(r.get("reason", ""))[:400]}
+
+
+def identify_one_codex(ctx: Ctx, listing: dict, idx: Index, use_mem, skip) -> dict:
+    """UN appel combine (annonce + 8 candidats) ; si confiance < ESCALATE_BELOW : un appel SMART (effort moyen) sur 4 x 2 images.
+    CODEX_IDENT_ROLE=smart fait passer aussi l'appel combine sur le modele SMART (plus lent, pas meilleur en test)."""
+    role1 = SMART if (_env("CODEX_IDENT_ROLE", "fast") or "fast").lower() == "smart" else FAST
+    cands = [p for _, p in shortlist(idx, listing["title"], use_mem, SHORTLIST_K, seed=listing["id"],
+                                     hits=ctx.hits if use_mem else None)]
+    if not cands:
+        return {"listing_id": listing["id"], "steps": 0, "escalated": False, "category": "Autre", "product_id": None,
+                "confidence": 0.0, "reasoning": "Catalogue vide"}
+    r = _cx_pick(ctx, role1, listing, cands, idx, use_mem, 1, skip)
+    if r is None:
+        raise RuntimeError("appel Codex en echec ou timeout")
+    steps = 1
+    if r["product_id"] is None and r["category"] != "Autre":   # aucun des 8 : 8 autres candidats de la famille reperee
+        seen = {c["id"] for c in cands}
+        more = [p for _, p in shortlist(idx, listing["title"], use_mem, SHORTLIST_K + len(seen), seed=listing["id"],
+                                        hits=ctx.hits if use_mem else None, type_hint=norm(r["category"]))
+                if p["id"] not in seen][:SHORTLIST_K]
+        r_b = _cx_pick(ctx, role1, listing, more, idx, use_mem, 1, skip) if more else None
+        if r_b is not None:
+            cands, r, steps = more, r_b, 2
+    res = {"listing_id": listing["id"], "steps": steps, "escalated": False, "category": r["category"],
+           "product_id": r["product_id"], "confidence": r["confidence"], "reasoning": r["reason"]}
+    if r["confidence"] < ESCALATE_BELOW:
+        top = ([idx.by_id[r["product_id"]]] if r["product_id"] else []) + [c for c in cands if c["id"] != r["product_id"]]
+        r2 = _cx_pick(ctx, SMART, listing, top[:4], idx, use_mem, 2, skip, effort="medium")
+        if r2 is None:
+            res.update(steps=steps + 1, escalated=True, reasoning=res["reasoning"] + " (escalade Codex echouee)")
+        else:
+            res.update(steps=steps + 1, escalated=True, category=r2["category"], product_id=r2["product_id"],
+                       confidence=r2["confidence"], reasoning=f"[arbitrage] {r2['reason']}")
+    if res["confidence"] < UNKNOWN_BELOW:
+        res["product_id"] = None
+    if res["product_id"]:   # produit identifie : sa categorie fait foi
+        res["category"] = idx.by_id[res["product_id"]].get("product_type") or res["category"]
+    return res
+
+
 # --------------------------------------------------------------------------- phase 1 : COLLECT
 COLLECT_TOOLS = [
     {"name": "fetch_vinted_catalog",
@@ -634,17 +768,26 @@ def phase_collect(ctx: Ctx, max_listings=None, max_calls=12) -> dict:
     base = (f"Marque : {ctx.brand}. Annonces deja en base : {have}. Pays disponibles : {', '.join(COUNTRIES)}."
             f"{goal}{mem_txt}")
     calls, new_total, seen, notebook = 0, 0, set(), []
-    for _ in range(16):
+    for _ in range(CODEX_COLLECT_TURNS if use_codex() else 16):
         prompt = (base + "\nCarnet des appels deja faits : " + (" | ".join(notebook) or "(aucun)") +
                   f"\nAppels restants : {max_calls - calls}. Choisis la prochaine action.")
-        out = llm(ctx, SMART, COLLECT_SYSTEM, prompt, COLLECT_TOOLS, "required", max_tokens=3000)
-        if not out.calls:
-            break
-        _id, name, args = out.calls[0]  # un seul outil a la fois
-        try:
-            inp = json.loads(args or "{}")
-        except Exception:
-            inp = {}
+        if use_codex():
+            inp = _cx(ctx, SMART, COLLECT_SYSTEM + "\n\n" + prompt + "\nReponds en JSON : action ('fetch' pour recuperer "
+                      "une page, 'finish' pour terminer), country (code pays ou null), page (entier ou null), reason (une "
+                      "phrase courte en francais).", [], COLLECT_SCHEMA)
+            if not inp:
+                break
+            name = "finish_collection" if inp.get("action") == "finish" else "fetch_vinted_catalog"
+            inp["why"] = inp.get("reason", "")
+        else:
+            out = llm(ctx, SMART, COLLECT_SYSTEM, prompt, COLLECT_TOOLS, "required", max_tokens=3000)
+            if not out.calls:
+                break
+            _id, name, args = out.calls[0]  # un seul outil a la fois
+            try:
+                inp = json.loads(args or "{}")
+            except Exception:
+                inp = {}
         if name == "finish_collection":
             ctx.log("collect", f"Fin de collecte : {inp.get('reason', '')}")
             break
@@ -793,6 +936,8 @@ def identify_one(ctx: Ctx, listing: dict, idx: Index, mem: Memory | None, skip_i
     skip = set(skip_ids) | {listing["id"]}
     use_mem = mem if ctx.use_memory else None
     hits = ctx.hits if use_mem else None
+    if use_codex():
+        return identify_one_codex(ctx, listing, idx, use_mem, skip)
     steps, trace = 0, []
     try:
         dtype, kws = _describe(ctx, listing, idx)
@@ -850,6 +995,9 @@ def identify_one(ctx: Ctx, listing: dict, idx: Index, mem: Memory | None, skip_i
 
 def identify_batch(ctx: Ctx, listings, idx: Index, mem_for, workers=6, on_result=None) -> list[dict]:
     """mem_for(listing) -> Memory|None. Retourne les resultats (meme ordre) ; erreur -> {'error': ...}."""
+    if use_codex():
+        workers = int(_env("CODEX_CONCURRENCY", "6") or 6)
+
     def work(l):
         if ctx.fatal:
             return {"listing_id": l["id"], "error": "abandon"}
@@ -998,11 +1146,18 @@ def phase_insights(ctx: Ctx) -> list[str]:
               "(beaucoup de neufs revendus = surstock, cadeaux non voulus, mauvais coloris), produits qui gardent leur "
               "valeur, points d'attention. Chiffres a l'appui, prudence si n est petit. Reponds uniquement par des "
               "puces, une par ligne, commencant par '- '.")
-    resp = llm(ctx, SMART, "Tu es analyste e-commerce pour une marque de maroquinerie/bagagerie.",
-               prompt, max_tokens=8000)
-    text = resp.text
-    bullets = [re.sub(r"^[-*•]\s*", "", l).strip() for l in text.splitlines() if re.match(r"^\s*[-*•]\s+", l)]
-    bullets = [b.replace("**", "") for b in bullets][:5]
+    if use_codex():
+        r = _cx(ctx, SMART, "Tu es analyste e-commerce pour une marque de maroquinerie/bagagerie.\n\n" + prompt.replace(
+            "Reponds uniquement par des puces, une par ligne, commencant par '- '.",
+            "Reponds en JSON : insight_1 a insight_5 = une phrase d'analyse chiffree en francais chacune "
+            "(insight_4 et insight_5 peuvent etre vides)."), [], INSIGHTS_SCHEMA)
+        bullets = [str(v).replace("**", "").strip() for k, v in sorted((r or {}).items()) if str(v).strip()][:5]
+    else:
+        resp = llm(ctx, SMART, "Tu es analyste e-commerce pour une marque de maroquinerie/bagagerie.",
+                   prompt, max_tokens=8000)
+        text = resp.text
+        bullets = [re.sub(r"^[-*•]\s*", "", l).strip() for l in text.splitlines() if re.match(r"^\s*[-*•]\s+", l)]
+        bullets = [b.replace("**", "") for b in bullets][:5]
     ctx.log("insights", f"{len(bullets)} insights generes")
     return bullets
 

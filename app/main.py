@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 import traceback
 import uuid
@@ -192,6 +193,12 @@ def _agent_thread(brand: str, run_id: str, run_agent):
 @app.post("/api/agent/{brand}/run")
 def run_agent_endpoint(brand: str):
     _brand(brand)
+    if os.environ.get("AGENT_MODE") == "queue":   # appli hebergee : le worker Codex du PC (python -m app.worker) execute le run
+        run_id = uuid.uuid4().hex[:12]
+        log = json.dumps([{"t": now(), "phase": "queue", "msg": "En attente du worker Codex"}], ensure_ascii=False)
+        x("INSERT INTO runs(id, brand, kind, started_at, status, stats, log) VALUES(:i,:b,'agent',:t,'queued','{}',:l)",
+          i=run_id, b=brand, t=now(), l=log)
+        return {"run_id": run_id}
     try:
         from app.agent import run_agent
     except ImportError:
