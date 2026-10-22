@@ -37,7 +37,7 @@
   .hide { display:none; }
   /* labeling */
   .lab { display:grid; grid-template-columns:minmax(280px,420px) 1fr; gap:24px; align-items:start; }
-  .lab .left img { width:100%; border-radius:12px; background:#eee; }
+  .lab .left > img { width:100%; max-height:300px; object-fit:contain; border-radius:12px; background:#eee; }
   .lab .meta { margin:10px 0; }
   .lab .meta h3 { margin:0 0 4px; font-size:17px; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; max-height:640px; overflow:auto; padding:2px; }
@@ -46,6 +46,16 @@
   .tile img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; background:#eee; }
   .tile.sug { border-color:var(--acc); background:var(--acc2); }
   .hint { color:var(--mut); font-size:13px; }
+  .guess { display:flex; gap:12px; align-items:center; background:var(--acc2); border:1px solid var(--acc); border-radius:12px; padding:10px; margin:10px 0; min-height:64px; }
+  .guess img { width:64px; height:64px; object-fit:cover; border-radius:8px; background:#eee; }
+  .guess b { color:var(--acc); }
+  button.btn.big { font-size:20px; padding:14px 28px; }
+  .bigrow { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .cats { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  button.cat { padding:10px 14px; border:2px solid var(--line); background:#fff; border-radius:10px; font:inherit; cursor:pointer; }
+  button.cat:hover { border-color:var(--acc); }
+  button.cat.sug { border-color:var(--acc); background:var(--acc2); font-weight:600; }
+  .cats select { padding:10px; border:2px solid var(--line); border-radius:10px; font:inherit; background:#fff; }
   @media (max-width:800px){ .lab { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -70,10 +80,17 @@
   <div class="kpis">
     <div class="kpi"><b id="k-list">-</b><span>annonces d'occasion collectées</span></div>
     <div class="kpi"><b id="k-match">-</b><span>reconnues dans le catalogue</span></div>
+    <div class="kpi"><b id="k-cat">-</b><span>classées par catégorie</span></div>
     <div class="kpi hot"><b id="k-new">-</b><span>% revendues neuves (produits non désirés)</span></div>
     <div class="kpi"><b id="k-unk">-</b><span>non reconnues / à traiter</span></div>
   </div>
   <div id="log"></div>
+  <h3 style="margin:6px 0 8px">Par catégorie de produit</h3>
+  <table style="margin-bottom:22px">
+    <thead><tr><th>Catégorie</th><th class="n">Annonces</th><th class="n">% revendues neuves</th><th class="n">Prix neuf moyen</th><th class="n">Prix revente moyen</th><th class="n">Décote</th></tr></thead>
+    <tbody id="cat-rows"><tr><td colspan="6" class="hint">Aucune annonce classée pour l'instant.</td></tr></tbody>
+  </table>
+  <h3 style="margin:6px 0 8px">Par référence exacte (quand l'agent l'identifie)</h3>
   <table>
     <thead><tr><th></th><th>Produit</th><th class="n">Prix neuf</th><th class="n">Annonces</th><th class="n">% revendues neuves</th><th class="n">Décote</th><th>Pays</th></tr></thead>
     <tbody id="rows"><tr><td colspan="7" class="hint">Aucune donnée. Charge le catalogue, collecte les annonces, puis lance l'agent.</td></tr></tbody>
@@ -83,15 +100,21 @@
 <!-- ============ ETIQUETAGE ============ -->
 <section id="v-label" class="hide">
   <div class="row">
-    <span class="hint">Pour chaque annonce, clique sur le vrai produit du catalogue (ou « Pas dans le catalogue »).</span>
+    <span class="hint">Suggestion bonne : « ✓ Correct » (ou Entrée). Sinon clique la bonne catégorie, ou le produit exact à droite.</span>
     <span class="chip" id="lab-count">0 étiquettes</span>
   </div>
   <div class="lab">
     <div class="left">
       <img id="l-img" alt="" referrerpolicy="no-referrer">
-      <div class="meta"><h3 id="l-title">-</h3><div id="l-sub" class="hint"></div><div id="l-guess" class="hint"></div></div>
-      <button class="btn warn" onclick="labelIt('NONE')">Pas dans le catalogue</button>
-      <button class="btn sec" onclick="nextLabel()">Passer</button>
+      <div class="meta"><h3 id="l-title">-</h3><div id="l-sub" class="hint"></div></div>
+      <div class="guess" id="l-guess"></div>
+      <div class="bigrow">
+        <button class="btn big" id="b-ok" onclick="labelOk()">✓ Correct</button>
+        <button class="btn warn" onclick="labelIt('NONE')">Pas dans le catalogue</button>
+        <button class="btn sec" onclick="nextLabel()">Passer</button>
+      </div>
+      <div class="hint">Mauvaise catégorie ? Clique la bonne (référence exacte inconnue) :</div>
+      <div class="cats" id="l-cats"></div>
     </div>
     <div>
       <div class="row"><input type="text" id="l-q" placeholder="Chercher dans le catalogue (ex : housse, tote, wallet...)" size="40" oninput="debouncedSearch()"></div>
@@ -115,7 +138,7 @@ function setStatus(t) { $('status').textContent = t || ''; }
 
 function tab(t) {
   for (const k of ['radar','label']) { $('v-'+k).classList.toggle('hide', k!==t); $('t-'+k).classList.toggle('on', k===t); }
-  if (t === 'label') { nextLabel(); searchProducts(); countLabels(); }
+  if (t === 'label') { loadCats().then(nextLabel); searchProducts(); countLabels(); }
 }
 
 /* ---------- Radar ---------- */
@@ -126,6 +149,15 @@ async function loadReport() {
   $('k-match').textContent = t.listings ? t.matched + ' (' + Math.round(100*t.matched/t.listings) + ' %)' : '-';
   $('k-new').textContent = t.matched ? t.pct_new + ' %' : '-';
   $('k-unk').textContent = t.unknown + t.unmatched;
+  $('k-cat').textContent = t.listings ? (t.categorized || 0) + ' (' + Math.round(100*(t.categorized || 0)/t.listings) + ' %)' : '-';
+  if ((d.categories || []).length) $('cat-rows').innerHTML = d.categories.map(c => `<tr>
+    <td><b>${esc(c.category)}</b></td>
+    <td class="n"><b>${c.n_listings}</b></td>
+    <td class="n">${c.pct_new} % <span class="hint">(${c.n_new_with_tags + c.n_new_without_tags})</span><span class="bar" style="width:${Math.round(c.pct_new*0.6)}px"></span></td>
+    <td class="n">${c.avg_retail_price != null ? c.avg_retail_price.toFixed(0) + ' €' : '-'}</td>
+    <td class="n">${c.avg_resale_price != null ? c.avg_resale_price.toFixed(0) + ' €' : '-'}</td>
+    <td class="n">${c.discount_pct != null ? c.discount_pct + ' %' : '-'}</td>
+  </tr>`).join('');
   if (!d.products.length) return;
   $('rows').innerHTML = d.products.map(p => `<tr>
     <td>${p.image_url ? `<img loading="lazy" src="${esc(p.image_url)}${p.image_url.includes('?') ? '&' : '?'}width=120">` : ''}</td>
@@ -192,13 +224,29 @@ let cur = null, searchTimer = null;
 async function countLabels() {
   try { const c = await api('/api/labels/count?brand=' + brand()); $('lab-count').textContent = c.count + ' étiquette' + (c.count > 1 ? 's' : ''); } catch(e) {}
 }
+let cats = [];
+async function loadCats() { try { cats = await api('/api/categories?brand=' + brand()); } catch(e) { cats = []; } renderCats(); }
+function renderCats() {
+  const g = cur && cur.match_category;
+  const top = cats.slice(0, 12).map(c => c.category).filter(c => c !== 'Autre');
+  if (g && g !== 'Autre' && !top.includes(g)) top.push(g);
+  top.push('Autre');
+  const rest = cats.map(c => c.category).filter(c => !top.includes(c));
+  $('l-cats').innerHTML = top.map(c => `<button class="cat ${c === g ? 'sug' : ''}" data-c="${esc(c)}">${esc(c)}</button>`).join('') +
+    (rest.length ? `<select id="l-more"><option value="">Autres catégories...</option>${rest.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>` : '');
+}
 async function nextLabel() {
   cur = await api('/api/labels/next?brand=' + brand());
-  if (!cur) { $('l-img').removeAttribute('src'); $('l-title').textContent = 'Plus aucune annonce à étiqueter'; $('l-sub').textContent = ''; $('l-guess').textContent = ''; return; }
+  renderCats();
+  if (!cur) { $('l-img').removeAttribute('src'); $('l-title').textContent = 'Plus aucune annonce à étiqueter'; $('l-sub').textContent = ''; $('l-guess').innerHTML = ''; $('b-ok').disabled = true; return; }
   $('l-img').src = cur.image_url;
   $('l-title').textContent = cur.title || '';
   $('l-sub').textContent = [cur.country && cur.country.toUpperCase(), cur.condition, cur.price_eur != null && cur.price_eur + ' €'].filter(Boolean).join(' · ');
-  $('l-guess').textContent = cur.match_product_title ? 'Suggestion de l\'agent : ' + cur.match_product_title : '';
+  const hasGuess = !!(cur.match_product_id || cur.match_category);
+  $('b-ok').disabled = !hasGuess;
+  $('l-guess').innerHTML = hasGuess
+    ? `${cur.match_product_image ? `<img src="${esc(cur.match_product_image)}${cur.match_product_image.includes('?') ? '&' : '?'}width=160">` : ''}<div><div class="hint">Suggestion de l'agent</div><div>Catégorie : <b>${esc(cur.match_category || '?')}</b></div>${cur.match_product_title ? `<div>${esc(cur.match_product_title)}</div>` : '<div class="hint">(référence exacte non identifiée)</div>'}</div>`
+    : '<div class="hint">Pas de suggestion de l\'agent pour cette annonce.</div>';
   document.querySelectorAll('.tile').forEach(t => t.classList.toggle('sug', t.dataset.id === cur.match_product_id));
 }
 function debouncedSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(searchProducts, 250); }
@@ -207,11 +255,25 @@ async function searchProducts() {
   $('l-grid').innerHTML = rows.map(p => `<div class="tile ${cur && cur.match_product_id === p.id ? 'sug' : ''}" data-id="${esc(p.id)}" onclick="labelIt('${esc(p.id)}')">
       <img loading="lazy" src="${esc(p.image_url || '')}${(p.image_url||'').includes('?') ? '&' : '?'}width=240"><div>${esc(p.title)}</div></div>`).join('');
 }
-async function labelIt(pid) {
-  if (!cur) return;
-  await api('/api/labels', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({listing_id: cur.id, product_id: pid})});
-  countLabels(); nextLabel();
+let saving = false;
+async function postLabel(extra) {
+  if (!cur || saving) return;
+  saving = true;
+  try {
+    await api('/api/labels', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({listing_id: cur.id, ...extra})});
+    countLabels(); await nextLabel();
+  } catch(e) { alert('Erreur : ' + e.message); }
+  saving = false;
 }
+const labelIt = pid => postLabel({product_id: pid});                       // produit exact (ou 'NONE')
+const labelCat = c => postLabel({product_id: null, category: c});          // catégorie seule
+const labelOk = () => (cur && (cur.match_product_id || cur.match_category))
+  ? postLabel({product_id: cur.match_product_id || null, category: cur.match_category || null}) : null;
+$('l-cats').addEventListener('click', e => { const b = e.target.closest('button.cat'); if (b) labelCat(b.dataset.c); });
+$('l-cats').addEventListener('change', e => { if (e.target.id === 'l-more' && e.target.value) labelCat(e.target.value); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !$('v-label').classList.contains('hide') && !/INPUT|SELECT|BUTTON/.test(document.activeElement.tagName)) labelOk();
+});
 
 loadReport().catch(()=>{}); resumeLastRun();
 </script>

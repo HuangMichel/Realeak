@@ -87,12 +87,55 @@ def report(brand: str):
         pr = r["price_eur"]
         r["discount_pct"] = round(100 * (1 - avg / pr), 1) if avg is not None and pr else None
         r["countries"] = dict(cc[r["product_id"]])
+    cats, categorized = _categories_report(brand)
     return {
         "totals": {"listings": n_list, "matched": n_matched, "unknown": n_unknown,
-                   "unmatched": n_list - n_matched - n_unknown,
+                   "unmatched": n_list - n_matched - n_unknown, "categorized": categorized,
                    "pct_new": round(100 * tot_new / n_matched, 1) if n_matched else 0},
+        "categories": cats,
         "products": rows,
     }
+
+
+def _categories_report(brand: str):
+    """Niveau CATEGORIE (product_type du catalogue) : robuste meme quand la reference exacte est incertaine."""
+    retail = {r["t"]: r["avg_price"] for r in q(
+        "SELECT product_type AS t, AVG(price_eur) AS avg_price FROM products WHERE brand=:b GROUP BY product_type", b=brand)}
+    g = defaultdict(list)
+    for r in q("""SELECT COALESCE(m.category, p.product_type) AS cat, l.condition_norm AS cn, l.price_eur AS price
+                  FROM matches m JOIN listings l ON l.id=m.listing_id LEFT JOIN products p ON p.id=m.product_id
+                  WHERE l.brand=:b""", b=brand):
+        if r["cat"]:
+            g[r["cat"]].append(r)
+    out, total = [], 0
+    for cat, rs in g.items():
+        n = len(rs)
+        total += n
+        tags = sum(1 for r in rs if r["cn"] == "new_with_tags")
+        notags = sum(1 for r in rs if r["cn"] == "new_without_tags")
+        prices = [r["price"] for r in rs if r["price"] is not None]
+        avg = sum(prices) / len(prices) if prices else None
+        rp = retail.get(cat)
+        out.append({"category": cat, "n_listings": n, "n_new_with_tags": tags, "n_new_without_tags": notags,
+                    "pct_new": round(100 * (tags + notags) / n, 1) if n else 0,
+                    "avg_resale_price": round(avg, 2) if avg is not None else None,
+                    "avg_retail_price": round(rp, 2) if rp is not None else None,
+                    "discount_pct": round(100 * (1 - avg / rp), 1) if avg is not None and rp else None})
+    out.sort(key=lambda d: -d["n_listings"])
+    return out, total
+
+
+@app.get("/api/categories")
+def categories(brand: str = "cabaia"):
+    """Types du catalogue, tries par nombre d'annonces classees puis nombre de produits (pour les boutons d'etiquetage)."""
+    cat = {r["t"]: r["n"] for r in q(
+        "SELECT product_type AS t, COUNT(*) AS n FROM products WHERE brand=:b AND product_type IS NOT NULL AND product_type<>'' "
+        "GROUP BY product_type", b=brand)}
+    lst = {r["t"]: r["n"] for r in q(
+        "SELECT COALESCE(m.category, p.product_type) AS t, COUNT(*) AS n FROM matches m JOIN listings l ON l.id=m.listing_id "
+        "LEFT JOIN products p ON p.id=m.product_id WHERE l.brand=:b GROUP BY COALESCE(m.category, p.product_type)", b=brand)}
+    names = sorted(cat, key=lambda t: (-(lst.get(t) or 0), -cat[t], t))
+    return [{"category": t, "n_products": cat[t], "n_listings": lst.get(t, 0)} for t in names]
 
 
 @app.get("/api/listings")
@@ -158,22 +201,34 @@ def run_agent_endpoint(brand: str):
 @app.get("/api/labels/next")
 def label_next(brand: str = "cabaia"):
     r = q("""SELECT l.*, m.product_id AS match_product_id, m.confidence AS match_confidence,
-             p.title AS match_product_title, p.image_url AS match_product_image
+             p.title AS match_product_title, p.image_url AS match_product_image,
+             COALESCE(m.category, p.product_type) AS match_category
              FROM listings l LEFT JOIN labels b ON b.listing_id=l.id
              LEFT JOIN matches m ON m.listing_id=l.id LEFT JOIN products p ON p.id=m.product_id
-             WHERE l.brand=:b AND b.listing_id IS NULL ORDER BY RANDOM() LIMIT 1""", b=brand)
+             WHERE l.brand=:b AND b.listing_id IS NULL ORDER BY (m.listing_id IS NULL), RANDOM() LIMIT 1""", b=brand)
     return r[0] if r else None
 
 
 @app.post("/api/labels")
 def label_post(body: dict = Body(...)):
-    lid, pid = body.get("listing_id"), body.get("product_id") or "NONE"
+    """product_id : id produit | 'NONE' (hors catalogue) | null (categorie seule, reference inconnue)."""
+    lid = body.get("listing_id")
     if not lid:
         raise HTTPException(400, "listing_id requis")
-    x("""INSERT INTO labels(listing_id, product_id, note, created_at) VALUES(:l,:p,:n,:t)
+    pid = body.get("product_id") or None
+    cat = (body.get("category") or "").strip() or None
+    if pid and pid != "NONE":
+        prod = q("SELECT product_type FROM products WHERE id=:i", i=pid)
+        if not prod:
+            raise HTTPException(400, f"produit inconnu: {pid}")
+        cat = prod[0]["product_type"] or cat      # le produit choisi fait foi pour la categorie
+    elif not pid and not cat:
+        raise HTTPException(400, "product_id ou category requis")
+    x("""INSERT INTO labels(listing_id, product_id, note, created_at, category) VALUES(:l,:p,:n,:t,:c)
          ON CONFLICT (listing_id) DO UPDATE SET product_id=excluded.product_id, note=excluded.note,
-         created_at=excluded.created_at""", l=lid, p=pid, n=body.get("note"), t=now())
-    return {"ok": True}
+         created_at=excluded.created_at, category=excluded.category""",
+      l=lid, p=pid, n=body.get("note"), t=now(), c=cat)
+    return {"ok": True, "category": cat}
 
 
 @app.get("/api/labels/count")

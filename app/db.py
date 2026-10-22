@@ -45,11 +45,22 @@ SCHEMA = [
         listing_id TEXT PRIMARY KEY, product_id TEXT, note TEXT, created_at TEXT)""",
 ]
 
+MIGRATIONS = [
+    "ALTER TABLE matches ADD COLUMN category TEXT",
+    "ALTER TABLE labels ADD COLUMN category TEXT",
+]
+
 
 def init_db() -> None:
     with engine.begin() as c:
         for s in SCHEMA:
             c.execute(text(s))
+    for s in MIGRATIONS:  # best-effort : la colonne existe peut-etre deja (SQLite et Postgres)
+        try:
+            with engine.begin() as c:
+                c.execute(text(s))
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def q(sql: str, **params) -> list[dict]:
