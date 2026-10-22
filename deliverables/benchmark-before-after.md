@@ -29,7 +29,7 @@ What this shows: titles on Vinted are vague ("sac cabaia bleu"), so a keyword ru
 | | Before | After (measured) |
 |---|---|---|
 | Read and classify 315 listings | Manual: not measured (a person has to open each listing and compare it with a 2,038-product catalog) | **8.7 minutes**, fully automatic |
-| Cost | Staff time | **$0.29** for 315 listings with the OpenAI API (≈ $0.001 per listing); **$0 marginal** now that the agent runs on a ChatGPT subscription through the Codex CLI |
+| Cost | Staff time | **$0.29** for 315 listings with the OpenAI API (≈ $0.001 per listing) |
 | Freshness | Occasional manual checks | Live: one click on "Refresh from Vinted" at 13:58 found **67 new Cabaïa listings** (382 in total). The French page timed out (Keenable 504) and the agent switched to the German site on its own. |
 
 ## 4. The agent improves with use

@@ -26,8 +26,8 @@ HOW THE DATA FLOWS
                                                             v
                          [App on Aiven Runtime] --> brand product manager (Overview, Teach the agent)
                                   |
-                                  +--> "Refresh from Vinted" = a run row queued in PostgreSQL,
-                                       picked up by the agent worker, progress streamed back from runs.log
+                                  +--> "Refresh from Vinted" = a new run row in PostgreSQL; the agent runs
+                                       inside the app on Aiven Runtime and streams its progress into runs.log
 
 1. Sources (live, public, no private access)
    - Brand catalog: the brand's public Shopify feed (products.json). Cabaia: 2,038 products, up to 6 photos each, price, product family.
@@ -52,7 +52,7 @@ HOW THE DATA FLOWS
    - Freshness: every run fetches Vinted live; first_seen gives new listings per day per product once the radar runs daily.
    - Volume: one run = 315 listings, 1,201 model calls, 2.39 M input tokens, processed in 8.7 minutes.
    - Reliability: 100% of listings classified into a product family; exact reference only when the agent is confident (47 of 315 on the first run, the rest flagged "unknown" rather than mislabeled). Human labels measure the real accuracy (see benchmark file).
-   - Cost: $0.29 for the full run through the OpenAI API, i.e. about $0.001 per listing. The agent now runs on a ChatGPT subscription through the Codex CLI (zero marginal cost): the app on Aiven Runtime queues each run in PostgreSQL and a worker executes it.
+   - Cost: $0.29 for the full run through the OpenAI API, i.e. about $0.001 per listing (Keenable requests on the hackathon credits).
 
 ========================================================================
 D - DESIRE: what a brand gets
