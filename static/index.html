@@ -22,34 +22,36 @@
     --acc:var(--tt-ok); --acc2:var(--tt-ok-100); --warn:var(--tt-red); --bad:var(--tt-red);
   }
   * { box-sizing:border-box; }
-  body { margin:0; font:15px/1.5 var(--font-body); letter-spacing:-.007em; background:var(--bg); color:var(--ink); }
+  body { margin:0; font:15px/1.45 var(--font-body); letter-spacing:-.007em; background:var(--bg); color:var(--ink); }
   :focus-visible { outline:3px solid var(--tt-green-dk); outline-offset:2px; }
-  header { display:flex; align-items:center; flex-wrap:wrap; gap:12px 20px; padding:12px 24px; background:var(--tt-black); color:#fff; border-bottom:1px solid #ffffff1f; position:sticky; top:0; z-index:5; }
-  header h1 { font:700 19px/1.2 var(--font-head); margin:0; letter-spacing:-.02em; }
+  header { display:flex; align-items:center; flex-wrap:wrap; gap:8px 20px; padding:10px 24px; background:var(--tt-black); color:#fff; border-bottom:1px solid #ffffff1f; position:sticky; top:0; z-index:5; }
+  header h1 { font:700 18px/1.2 var(--font-head); margin:0; letter-spacing:-.02em; }
   header h1::before { content:""; display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--tt-green); margin-right:10px; box-shadow:0 0 12px #72fd4e80; }
   nav { display:flex; gap:4px; }
-  nav button { background:none; border:0; padding:8px 14px; font:inherit; cursor:pointer; border-radius:12px; color:#ffffffd0; }
+  nav button { background:none; border:0; padding:6px 14px; font:inherit; cursor:pointer; border-radius:12px; color:#ffffffd0; }
   nav button:hover { color:#fff; background:#ffffff14; }
   nav button.on { background:var(--tt-green); color:var(--tt-black); font-weight:600; }
   .hdr-right { margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  select.brand { padding:8px 12px; border-radius:12px; border:1px solid #ffffff3d; background:var(--tt-carbon); color:#fff; font:inherit; }
-  main { max-width:1120px; margin:0 auto; padding:22px 24px 70px; }
-  button.btn { padding:10px 18px; border:1px solid transparent; background:var(--gr-btn); color:var(--tt-black); border-radius:14px; font:inherit; cursor:pointer; font-weight:600; }
+  select.brand { padding:6px 12px; border-radius:12px; border:1px solid #ffffff3d; background:var(--tt-carbon); color:#fff; font:inherit; }
+  main { max-width:1120px; margin:0 auto; padding:16px 24px 40px; }
+  button.btn { padding:8px 16px; border:1px solid transparent; background:var(--gr-btn); color:var(--tt-black); border-radius:14px; font:inherit; cursor:pointer; font-weight:600; }
   button.btn:hover:not(:disabled) { filter:brightness(1.07); }
   button.btn.sec { background:#fff; color:var(--ink); border-color:var(--line-strong); }
   button.btn.sec:hover:not(:disabled) { background:var(--tt-seasalt); filter:none; }
   button.btn:disabled { opacity:.55; cursor:default; }
-  input[type=text] { padding:11px 14px; border:1px solid var(--line-strong); border-radius:12px; font:inherit; background:#fff; color:var(--ink); width:100%; }
+  input[type=text] { padding:9px 14px; border:1px solid var(--line-strong); border-radius:12px; font:inherit; background:#fff; color:var(--ink); width:100%; }
   .hide { display:none !important; }
   .hint { color:var(--mut); font-size:13px; }
-  h2.sec { font:700 22px/1.25 var(--font-head); letter-spacing:-.02em; margin:38px 0 4px; }
-  p.cap { margin:0 0 14px; color:var(--mut); font-size:14px; }
+  .sh { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:22px 0 8px; }
+  h2.sec { font:700 18px/1.25 var(--font-head); letter-spacing:-.02em; margin:0; }
+  .lnk { all:unset; cursor:pointer; font-size:13px; font-weight:600; color:var(--tt-ok); }
+  .lnk:hover, .lnk:focus-visible { text-decoration:underline; }
 
   /* progress */
-  #progress { background:var(--card); border:1px solid var(--line-strong); border-radius:18px; padding:16px 20px; margin-bottom:18px; }
-  #progress h3 { margin:0 0 12px; font:700 16px/1.3 var(--font-head); }
-  .steps { display:flex; gap:10px; flex-wrap:wrap; list-style:none; margin:0; padding:0; }
-  .steps li { flex:1 1 150px; display:flex; gap:10px; align-items:center; padding:10px 12px; border-radius:12px; background:var(--tt-seasalt); color:var(--mut); font-size:14px; }
+  #progress { background:var(--card); border:1px solid var(--line-strong); border-radius:18px; padding:12px 16px; margin-bottom:12px; }
+  #progress h3 { margin:0 0 8px; font:700 15px/1.3 var(--font-head); }
+  .steps { display:flex; gap:8px; flex-wrap:wrap; list-style:none; margin:0; padding:0; }
+  .steps li { flex:1 1 140px; display:flex; gap:10px; align-items:center; padding:8px 12px; border-radius:12px; background:var(--tt-seasalt); color:var(--mut); font-size:14px; }
   .steps li i { flex:none; width:24px; height:24px; border-radius:50%; background:#fff; border:2px solid var(--line-strong); display:grid; place-items:center; font:700 12px/1 var(--font-head); font-style:normal; }
   .steps li.act { background:var(--tt-black); color:#fff; }
   .steps li.act i { border-color:var(--tt-green); color:var(--tt-green); background:transparent; animation:pulse 1.2s infinite; }
@@ -57,123 +59,104 @@
   .steps li.ok i { background:var(--tt-ok); border-color:var(--tt-ok); color:#fff; }
   .steps.err li { opacity:.5; }
   @keyframes pulse { 50% { box-shadow:0 0 0 5px #72fd4e40; } }
-  #err { background:#fff1f1; border:1px solid var(--tt-red); border-radius:14px; padding:12px 16px; margin-bottom:18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  #err { background:#fff1f1; border:1px solid var(--tt-red); border-radius:14px; padding:8px 14px; margin-bottom:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 
-  /* hero */
-  .hero { background:var(--tt-black); color:#fff; border-radius:24px; padding:34px 36px; }
-  .hero h2 { font:700 clamp(28px,4.4vw,48px)/1.12 var(--font-head); letter-spacing:-.03em; margin:0 0 14px; max-width:20em; }
+  /* hero + KPIs */
+  .hero { background:var(--tt-black); color:#fff; border-radius:20px; padding:20px 28px; }
+  .hero h2 { font:700 clamp(24px,3.6vw,36px)/1.12 var(--font-head); letter-spacing:-.03em; margin:0 0 6px; }
   .hero h2 em { font-style:normal; color:var(--tt-green); }
-  .hero p { margin:0; font-size:17px; color:#ffffffd9; max-width:50em; }
-  .hero p b { color:#fff; }
-  .hero .upd { margin-top:16px; font-size:13px; color:#ffffff99; }
-  .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px; }
-  .kpi { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px 20px; }
-  .kpi span { display:block; color:var(--mut); font-size:14px; margin-bottom:4px; }
-  .kpi b { display:block; font:700 34px/1.15 var(--font-head); letter-spacing:-.025em; }
-  .kpi small { display:block; color:var(--mut); font-size:13px; margin-top:2px; }
-  .kpi.hot b small { display:inline; }
+  .hero .row { display:flex; justify-content:space-between; align-items:baseline; gap:4px 16px; flex-wrap:wrap; }
+  .hero p { margin:0; font-size:15px; color:#ffffffd9; }
+  .hero .upd { font-size:12px; color:#ffffff80; }
+  .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
+  .kpi { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:10px 16px; }
+  .kpi b { display:block; font:700 28px/1.15 var(--font-head); letter-spacing:-.025em; }
+  .kpi span { display:block; color:var(--mut); font-size:13.5px; }
 
   /* insights */
-  .ins { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-  .ins .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px 18px; display:flex; gap:14px; align-items:flex-start; }
-  .ins .card:first-child { grid-column:1 / -1; }
-  .ico { flex:none; width:38px; height:38px; border-radius:12px; background:var(--tt-black); color:var(--tt-green); display:grid; place-items:center; font:700 18px/1 var(--font-head); }
-  .ins p { margin:0; font-size:14.5px; }
+  .ins p { margin:0 0 6px; padding:9px 14px; font-size:14.5px; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--tt-green-dk); border-radius:12px; }
 
   /* families */
-  .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--mut); margin-bottom:12px; }
-  .legend i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
-  .fam { background:var(--card); border:1px solid var(--line); border-radius:18px; margin-bottom:10px; overflow:hidden; }
-  .fam > button { all:unset; box-sizing:border-box; display:grid; grid-template-columns:34px minmax(0,1fr) 190px; gap:6px 16px; align-items:center; width:100%; padding:14px 18px; cursor:pointer; }
+  .fam { background:var(--card); border:1px solid var(--line); border-radius:14px; margin-bottom:6px; overflow:hidden; }
+  .fam > button { all:unset; box-sizing:border-box; display:grid; grid-template-columns:minmax(0,230px) minmax(0,1fr) 52px; gap:12px; align-items:center; width:100%; padding:9px 16px; cursor:pointer; }
   .fam > button:hover { background:var(--tt-seasalt); }
   .fam > button:focus-visible { outline:3px solid var(--tt-green-dk); outline-offset:-3px; }
-  .rank { font:700 20px/1 var(--font-head); color:var(--mut); }
-  .fam .name { font:700 17px/1.3 var(--font-head); letter-spacing:-.01em; }
-  .fam .name small { font:400 13px var(--font-body); color:var(--mut); margin-left:8px; }
-  .track { display:flex; height:12px; border-radius:6px; background:var(--tt-platine); overflow:hidden; margin-top:8px; }
+  .fam .name { font:700 15px/1.25 var(--font-head); letter-spacing:-.01em; }
+  .fam .name small { display:block; font:400 12px var(--font-body); color:var(--mut); }
+  .track { display:flex; height:10px; border-radius:5px; background:var(--tt-platine); overflow:hidden; }
   .track .t1 { background:var(--red-dk); } .track .t2 { background:var(--red-lt); }
-  .fam .right { text-align:right; }
-  .fam .right b { font:700 26px/1 var(--font-head); letter-spacing:-.02em; }
-  .fam .right > span { display:block; font-size:13px; color:var(--mut); margin-top:3px; }
-  .fam .price { grid-column:2 / -1; font-size:13.5px; color:var(--ink); }
-  .fam .chev { display:inline-block; transition:transform .15s; margin-left:6px; color:var(--mut); }
-  .fam.open .chev { transform:rotate(90deg); }
-  .fam .more { border-top:1px solid var(--line); padding:14px 18px 16px; background:var(--tt-seasalt); }
-  .thumbs { display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:10px; }
+  .fam .pc { font:700 20px/1 var(--font-head); letter-spacing:-.02em; text-align:right; }
+  .fam .more { border-top:1px solid var(--line); padding:10px 16px 12px; background:var(--tt-seasalt); }
+  .thumbs { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px; }
   .thumb { display:block; text-decoration:none; color:var(--ink); background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:12px; }
   .thumb img { width:100%; aspect-ratio:1; object-fit:cover; display:block; background:var(--tt-platine); }
-  .thumb div { padding:6px 8px; }
+  .thumb div { padding:4px 8px; }
   .thumb b { display:block; font-size:13px; }
-  .showall { margin-top:6px; }
 
   /* products */
-  .pgrid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
-  .pcard { background:var(--card); border:1px solid var(--line); border-radius:18px; overflow:hidden; }
+  .pgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:10px; }
+  .pcard { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
   .pcard img { width:100%; aspect-ratio:1; object-fit:cover; display:block; background:var(--tt-platine); }
-  .pcard .b { padding:12px 14px 14px; }
-  .pcard .t { font-weight:600; font-size:14px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.6em; }
-  .pcard .m { margin-top:6px; font-size:13px; color:var(--mut); display:flex; justify-content:space-between; gap:8px; }
-  .pill { display:inline-block; padding:1px 9px; border-radius:99px; font-size:12.5px; font-weight:600; background:var(--tt-platine); color:var(--ink); }
+  .pcard .b { padding:6px 10px 8px; }
+  .pcard .t { font-weight:600; font-size:12.5px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.6em; }
+  .pill { display:inline-block; margin-top:4px; padding:0 8px; border-radius:99px; font-size:12px; font-weight:600; background:var(--tt-platine); color:var(--ink); }
   .pill.new { background:#fde2e3; color:#8f1d20; }
 
   /* details */
-  details.how { margin-top:38px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:4px 20px; }
-  details.how summary { cursor:pointer; padding:14px 0; font:700 18px/1.3 var(--font-head); letter-spacing:-.01em; }
-  .how ol { margin:4px 0 16px; padding:0; list-style:none; display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-  .how li { display:flex; gap:12px; background:var(--tt-seasalt); border-radius:14px; padding:14px; font-size:14.5px; }
-  .how li i { flex:none; width:28px; height:28px; border-radius:50%; background:var(--tt-black); color:var(--tt-green); display:grid; place-items:center; font:700 14px/1 var(--font-head); font-style:normal; }
-  .how li b { display:block; margin-bottom:2px; }
-  #log { background:var(--tt-black); color:#ffffffc0; font:12.5px/1.55 var(--font-mono); border-radius:12px; padding:12px 14px; max-height:260px; overflow:auto; margin:0 0 16px; white-space:pre-wrap; }
+  details.how { margin-top:22px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:2px 16px; }
+  details.how summary { cursor:pointer; padding:10px 0; font:700 15px/1.3 var(--font-head); }
+  .how ol { margin:2px 0 10px; padding:0; list-style:none; display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .how li { display:flex; gap:8px; align-items:center; background:var(--tt-seasalt); border-radius:12px; padding:8px 10px; font-size:13.5px; }
+  .how li i { flex:none; width:22px; height:22px; border-radius:50%; background:var(--tt-black); color:var(--tt-green); display:grid; place-items:center; font:700 12px/1 var(--font-head); font-style:normal; }
+  #log { background:var(--tt-black); color:#ffffffc0; font:12px/1.5 var(--font-mono); border-radius:12px; padding:10px 12px; max-height:200px; overflow:auto; margin:0 0 12px; white-space:pre-wrap; }
   #log .ph { color:var(--tt-green); }
 
   /* teach */
-  .teach { display:grid; grid-template-columns:minmax(260px,440px) 1fr; gap:26px; align-items:start; }
-  .teach .photo { width:100%; height:min(56vh,480px); object-fit:contain; border-radius:20px; background:var(--tt-platine); display:block; }
-  .teach .meta { margin-top:12px; }
-  .teach .meta h3 { margin:0 0 4px; font:700 17px/1.3 var(--font-head); }
-  .q { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:22px 24px; }
-  .q h2 { margin:0 0 6px; font:700 28px/1.2 var(--font-head); letter-spacing:-.02em; }
-  .q .guessimg { display:flex; gap:14px; align-items:center; margin:12px 0 18px; }
-  .q .guessimg img { width:72px; height:72px; border-radius:12px; object-fit:cover; background:var(--tt-platine); }
-  .bigrow { display:flex; gap:12px; flex-wrap:wrap; }
-  button.btn.big { font-size:22px; padding:16px 38px; min-width:150px; }
+  .teach { display:grid; grid-template-columns:minmax(240px,380px) 1fr; gap:22px; align-items:start; }
+  .teach .photo { width:100%; height:min(50vh,420px); object-fit:contain; border-radius:18px; background:var(--tt-platine); display:block; }
+  .teach .ttl { margin-top:8px; font-size:13px; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .q { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px 20px; }
+  .qh { display:flex; gap:14px; align-items:center; margin-bottom:14px; }
+  #q-guess:empty { display:none; }
+  .qh img { width:64px; height:64px; border-radius:12px; object-fit:cover; background:var(--tt-platine); display:block; }
+  .q h2 { margin:0; font:700 26px/1.2 var(--font-head); letter-spacing:-.02em; }
+  .bigrow { display:flex; gap:10px; flex-wrap:wrap; }
+  button.btn.big { font-size:20px; padding:12px 34px; min-width:140px; }
   kbd { font:500 12px var(--font-mono); background:#0f0f1014; border-radius:6px; padding:1px 6px; margin-left:6px; }
-  .no-panel { margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
-  .no-panel h4 { margin:0 0 8px; font:700 16px/1.3 var(--font-head); }
-  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
-  .chips button { padding:10px 14px; border:2px solid var(--line); background:#fff; color:var(--ink); border-radius:12px; font:inherit; cursor:pointer; }
+  .no-panel { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .chips button { padding:7px 12px; border:2px solid var(--line); background:#fff; color:var(--ink); border-radius:12px; font:inherit; cursor:pointer; }
   .chips button:hover { border-color:var(--tt-green-dk); }
-  .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; max-height:300px; overflow:auto; padding:2px; margin:10px 0 14px; }
-  .tiles button { all:unset; box-sizing:border-box; cursor:pointer; background:#fff; border:2px solid var(--line); border-radius:12px; padding:6px; text-align:center; font-size:11.5px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:8px; max-height:220px; overflow:auto; padding:2px; margin:8px 0 12px; }
+  .tiles button { all:unset; box-sizing:border-box; cursor:pointer; background:#fff; border:2px solid var(--line); border-radius:12px; padding:5px; text-align:center; font-size:11.5px; }
   .tiles button:hover, .tiles button:focus-visible { border-color:var(--tt-green-dk); }
   .tiles img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; background:var(--tt-platine); display:block; }
-  .count { display:inline-block; margin-top:16px; padding:6px 14px; border-radius:99px; background:var(--acc2); box-shadow:inset 0 0 0 1px var(--tt-ok-200); font-size:14px; }
-
+  .count { display:inline-block; margin-top:12px; padding:4px 12px; border-radius:99px; background:var(--acc2); box-shadow:inset 0 0 0 1px var(--tt-ok-200); font-size:13.5px; }
 
   /* brand search */
-  #bsearch { position:relative; margin-bottom:16px; }
+  #bsearch { position:relative; margin-bottom:10px; }
   #bs-dd { position:absolute; left:0; right:0; top:100%; margin-top:6px; z-index:4; background:var(--card); border:1px solid var(--line-strong); border-radius:14px; box-shadow:0 12px 32px #0f0f1026; overflow:hidden; }
-  .bs-msg { padding:12px 16px; color:var(--mut); font-size:14px; }
-  .bs-row { all:unset; box-sizing:border-box; display:flex; gap:12px; align-items:center; width:100%; padding:10px 16px; cursor:pointer; }
+  .bs-msg { padding:10px 16px; color:var(--mut); font-size:14px; }
+  .bs-row { all:unset; box-sizing:border-box; display:flex; gap:12px; align-items:center; width:100%; padding:8px 16px; cursor:pointer; }
   .bs-row:hover, .bs-row:focus-visible { background:var(--tt-seasalt); }
-  .bs-row img, .bs-card img { width:32px; height:32px; border-radius:8px; background:var(--tt-platine); flex:none; }
+  .bs-row img, .bs-card img { width:28px; height:28px; border-radius:8px; background:var(--tt-platine); flex:none; }
   .bs-row .nm { min-width:0; flex:1; } .bs-row .nm b { display:block; } .bs-row .nm small { color:var(--mut); font-size:12.5px; }
   .bs-b { flex:none; font-size:12.5px; font-weight:600; padding:2px 10px; border-radius:99px; background:var(--tt-platine); color:var(--ink); }
   .bs-b.ok { background:var(--tt-ok-100); color:#14532d; } .bs-b.no { background:#fde2e3; color:#8f1d20; }
-  .bs-card { display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:var(--card); border:1px solid var(--line-strong); border-radius:18px; padding:14px 18px; margin-bottom:16px; }
-  .bs-card .nm { flex:1; min-width:200px; } .bs-card .nm a { margin-left:8px; color:var(--mut); font-size:13px; }
+  .bs-card { display:flex; gap:12px; align-items:center; flex-wrap:wrap; background:var(--card); border:1px solid var(--line-strong); border-radius:16px; padding:8px 14px; margin-bottom:10px; }
+  .bs-card .nm { flex:1; min-width:180px; } .bs-card .nm a { margin-left:8px; color:var(--mut); font-size:13px; }
 
   @media (max-width:800px){
-    header { padding:10px 16px; } .hdr-right { margin-left:0; width:100%; } .hdr-right .btn { flex:1; }
-    main { padding:16px 16px 60px; }
-    .hero { padding:24px 20px; border-radius:20px; }
-    .kpis, .ins, .how ol { grid-template-columns:1fr; }
-    .pgrid { grid-template-columns:repeat(2,1fr); gap:10px; }
-    .fam > button { grid-template-columns:26px minmax(0,1fr) auto; padding:12px 14px; gap:6px 10px; }
-    .fam .price { grid-column:1 / -1; }
+    header { padding:8px 16px; } .hdr-right { margin-left:0; width:100%; } .hdr-right .btn { flex:1; }
+    main { padding:12px 16px 40px; }
+    .hero { padding:16px 18px; border-radius:18px; }
+    .kpis { grid-template-columns:repeat(3,1fr); gap:8px; } .kpi { padding:8px 10px; } .kpi b { font-size:22px; } .kpi span { font-size:12px; }
+    .how ol { grid-template-columns:repeat(2,1fr); }
+    .fam > button { grid-template-columns:minmax(0,1fr) auto; gap:6px 10px; padding:9px 12px; }
+    .fam .track { grid-column:1 / -1; grid-row:2; }
     .teach { grid-template-columns:1fr; }
-    .q h2 { font-size:23px; }
-    button.btn.big { flex:1; padding:16px 12px; min-width:0; }
+    .q h2 { font-size:21px; }
+    button.btn.big { flex:1; padding:12px; min-width:0; }
   }
 </style>
 </head>
@@ -182,61 +165,54 @@
   <h1>Resale Radar</h1>
   <nav aria-label="Sections">
     <button id="t-radar" class="on" onclick="tab('radar')">Overview</button>
-    <button id="t-label" onclick="tab('label')">Teach the agent</button>
+    <button id="t-label" onclick="tab('label')">Teach</button>
   </nav>
   <div class="hdr-right">
-    <label class="hint" style="color:#ffffffc0" for="brand">Brand</label>
-    <select class="brand" id="brand" onchange="onBrand()"><option value="cabaia" selected>Cabaïa</option></select>
-    <button class="btn" id="b-agent" onclick="refresh()">Refresh from Vinted</button>
+    <select class="brand" id="brand" aria-label="Brand" onchange="onBrand()"><option value="cabaia" selected>Cabaïa</option></select>
+    <button class="btn" id="b-agent" onclick="refresh()">Refresh</button>
   </div>
 </header>
 <main>
 <!-- ============ OVERVIEW ============ -->
 <section id="v-radar">
   <div id="bsearch">
-    <input type="text" id="bs-q" placeholder="Search a brand… (e.g. KBF, Cabaïa)" oninput="bsInput()" autocomplete="off" aria-label="Search a brand">
+    <input type="text" id="bs-q" placeholder="Search a brand…" oninput="bsInput()" autocomplete="off" aria-label="Search a brand">
     <div id="bs-dd" class="hide" role="listbox"></div>
   </div>
   <div id="bs-card" class="hide"></div>
-  <div id="err" class="hide" role="alert"><b>Something went wrong, try again.</b><button class="btn sec" onclick="loadAll()">Reload</button></div>
+  <div id="err" class="hide" role="alert"><b>Something went wrong.</b><button class="btn sec" onclick="loadAll()">Retry</button></div>
   <div id="progress" class="hide" aria-live="polite">
     <h3 id="pg-title">Starting…</h3>
     <ol class="steps" id="pg-steps"></ol>
   </div>
 
   <div class="hero">
-    <h2 id="h-title">Loading your resale picture…</h2>
-    <p id="h-sub"></p>
-    <div class="upd" id="h-upd"></div>
+    <h2 id="h-title">Loading…</h2>
+    <div class="row"><p id="h-sub"></p><div class="upd" id="h-upd"></div></div>
   </div>
   <div class="kpis">
-    <div class="kpi"><span>Items resold on Vinted</span><b id="k-list">–</b></div>
-    <div class="kpi"><span>Resold brand new (never used)</span><b id="k-new">–</b><small id="k-new2"></small></div>
-    <div class="kpi"><span>Most unwanted family</span><b id="k-fam">–</b><small id="k-fam2"></small></div>
+    <div class="kpi"><b id="k-list">–</b><span>Listings on Vinted</span></div>
+    <div class="kpi"><b id="k-new">–</b><span>Resold new</span></div>
+    <div class="kpi"><b id="k-fam">–</b><span id="k-fam2">Most unwanted</span></div>
   </div>
 
-  <h2 class="sec">What the agent recommends</h2>
-  <p class="cap">Plain-language takeaways from the latest analysis.</p>
-  <div class="ins" id="insights"><p class="hint">Recommendations will appear after the first refresh.</p></div>
-
-  <h2 class="sec">Products your customers don't want</h2>
-  <p class="cap">Product families ranked by the share of listings that are brand new, meaning bought and never used. Click a family to see the listings.</p>
-  <div class="legend"><span><i style="background:var(--red-dk)"></i>New, still has its tags</span><span><i style="background:var(--red-lt)"></i>New, tags removed</span></div>
+  <div class="sh"><h2 class="sec">Least wanted families</h2><button class="lnk hide" id="fam-all" onclick="famsAll=!famsAll;render()">Show all</button></div>
   <div id="fams"></div>
 
-  <h2 class="sec">Exact products identified</h2>
-  <p class="cap">Recognized from the listing photo by the agent.</p>
+  <div class="sh"><h2 class="sec">Agent recommendations</h2></div>
+  <div class="ins" id="insights"><p class="hint">After the first refresh.</p></div>
+
+  <div class="sh"><h2 class="sec">Recognized products</h2></div>
   <div class="pgrid" id="prods"></div>
 
   <details class="how" id="how">
     <summary>How the agent worked</summary>
     <ol>
-      <li><i>1</i><div><b>Reads Vinted</b>It decides which pages and countries to look at (using Keenable search) and stops as soon as no new listings appear.</div></li>
-      <li><i>2</i><div><b>Recognizes your products</b>It matches each listing photo against your whole catalog, asks a stronger model when unsure, and says "unknown" rather than guess.</div></li>
-      <li><i>3</i><div><b>Learns</b>It remembers nicknames, confirmed photos and your corrections, so it improves with every refresh.</div></li>
-      <li><i>4</i><div><b>Writes recommendations</b>It turns the numbers into the plain-language advice you see above.</div></li>
+      <li><i>1</i>Reads Vinted</li>
+      <li><i>2</i>Recognizes products</li>
+      <li><i>3</i>Learns from you</li>
+      <li><i>4</i>Writes advice</li>
     </ol>
-    <div class="hint" style="margin-bottom:6px">Live log of the latest refresh</div>
     <div id="log">No refresh yet.</div>
   </details>
 </section>
@@ -246,27 +222,26 @@
   <div class="teach">
     <div>
       <img class="photo" id="l-img" alt="Vinted listing to check" referrerpolicy="no-referrer">
-      <div class="meta"><h3 id="l-title">–</h3><div id="l-sub" class="hint"></div></div>
+      <div class="ttl" id="l-title">–</div>
     </div>
     <div>
       <div class="q" id="q">
-        <h2 id="q-h">Loading…</h2>
-        <div id="q-guess"></div>
+        <div class="qh"><div id="q-guess"></div><h2 id="q-h">Loading…</h2></div>
         <div class="bigrow" id="q-btns">
           <button class="btn big" id="b-yes" onclick="answerYes()">Yes<kbd>Y</kbd></button>
           <button class="btn big sec" id="b-no" onclick="toggleNo(true)">No<kbd>N</kbd></button>
         </div>
         <div class="no-panel hide" id="no-panel">
-          <h4>What family is it?</h4>
           <div class="chips" id="l-cats"></div>
-          <h4>Or pick the exact product</h4>
-          <input type="text" id="l-q" placeholder="Search your products (e.g. tote, wallet, backpack…)" oninput="debouncedSearch()" aria-label="Search your products">
+          <input type="text" id="l-q" placeholder="Search products…" oninput="debouncedSearch()" aria-label="Search your products">
           <div class="tiles" id="l-grid"></div>
-          <button class="btn sec" onclick="postLabel({product_id:'NONE'})">Not one of our products</button>
-          <button class="btn sec" onclick="nextLabel()">Skip</button>
+          <div class="bigrow">
+            <button class="btn sec" onclick="postLabel({product_id:'NONE'})">Not ours</button>
+            <button class="btn sec" onclick="nextLabel()">Skip</button>
+          </div>
         </div>
       </div>
-      <span class="count" id="lab-count">0 answers — each one makes the agent more accurate</span>
+      <span class="count" id="lab-count">0 answers</span>
     </div>
   </div>
 </section>
@@ -276,7 +251,6 @@
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const brand = () => $('brand').value || 'cabaia';
-const brandName = () => $('brand').selectedOptions[0].textContent;
 const img = (u, w) => u ? esc(u) + (u.includes('?') ? '&' : '?') + 'width=' + w : '';
 const eur = n => '€' + Math.round(n);
 const COND = {new_with_tags:'New with tags', new_without_tags:'New, no tags', very_good:'Very good', good:'Good', satisfactory:'Satisfactory'};
@@ -307,49 +281,49 @@ function render() {
   const tot = cats.reduce((a, c) => a + c.n_listings, 0);
   const tags = cats.reduce((a, c) => a + c.n_new_with_tags, 0);
   const nw = tags + cats.reduce((a, c) => a + c.n_new_without_tags, 0);
-  const B = esc(brandName()), n = D.totals.listings;
+  const n = D.totals.listings;
   if (!tot) {
     $('h-title').textContent = 'No data yet';
-    $('h-sub').textContent = 'Click "Refresh from Vinted" and the agent will look at what your customers resell.';
+    $('h-sub').textContent = 'Click Refresh to start.';
   } else {
-    $('h-title').innerHTML = `<em>${Math.round(100*nw/tot)}%</em> of your products for sale on Vinted are brand new.`;
-    $('h-sub').innerHTML = `<b>${n}</b> ${B} items are listed second-hand right now. <b>${tags}</b> still have their tags: bought, never used.`;
+    $('h-title').innerHTML = `<em>${Math.round(100*nw/tot)}%</em> of your Vinted listings are brand new`;
+    $('h-sub').textContent = `${tags} still have their tags`;
   }
   const done = RUNS.find(r => r.status === 'done');
-  $('h-upd').textContent = done ? 'Last updated ' + new Date((done.finished_at || done.started_at)).toLocaleString('en-GB', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
+  $('h-upd').textContent = done ? 'Updated ' + new Date((done.finished_at || done.started_at)).toLocaleString('en-GB', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
   $('k-list').textContent = n || '–';
   $('k-new').textContent = tot ? nw : '–';
-  $('k-new2').textContent = tot ? `${Math.round(100*nw/tot)}% of listings · ${tags} with tags` : '';
   const fams = cats.filter(c => c.n_listings >= 5 && !FAM_SKIP.has(c.category)).sort((a, b) => b.pct_new - a.pct_new || b.n_listings - a.n_listings);
   const top = fams.find(c => c.n_listings >= 15);
-  $('k-fam').textContent = top ? top.category : '–';
-  $('k-fam2').textContent = top ? Math.round(top.pct_new) + '% of its listings are new' : '';
+  $('k-fam').textContent = top ? Math.round(top.pct_new) + '%' : '–';
+  $('k-fam2').textContent = top ? 'Most unwanted: ' + top.category : 'Most unwanted';
   renderInsights(); renderFams(fams); renderProducts(); renderLog(RUNS[0]);
 }
-const ICONS = [[/€|price|priced|discount|retail/i,'€'],[/tag|new/i,'%'],[/bag|backpack|crossbody|wallet|model/i,'◆']];
+const firstSentence = t => {
+  let s = String(t).trim().split(/(?<=[.!?])\s+/)[0];
+  if (s.length > 140) s = s.slice(0, 140).replace(/\s+\S*$/, '') + '…';
+  return s;
+};
 function renderInsights() {
   const run = RUNS.find(r => r.stats && Array.isArray(r.stats.insights) && r.stats.insights.length);
   if (!run) return;
-  $('insights').innerHTML = run.stats.insights.slice(0, 5).map(t => {
-    const ic = (ICONS.find(([re]) => re.test(t)) || [0,'!'])[1];
-    return `<div class="card"><div class="ico" aria-hidden="true">${ic}</div><p>${esc(t)}</p></div>`;
-  }).join('');
+  $('insights').innerHTML = run.stats.insights.slice(0, 3).map(t => `<p>${esc(firstSentence(t))}</p>`).join('');
 }
 function renderFams(fams) {
-  if (!fams.length) { $('fams').innerHTML = '<p class="hint">Not enough listings yet to rank your product families.</p>'; return; }
-  const list = famsAll ? fams : fams.slice(0, 10);
-  $('fams').innerHTML = list.map((c, i) => {
+  $('fam-all').classList.toggle('hide', fams.length <= 5);
+  $('fam-all').textContent = famsAll ? 'Top 5' : 'Show all';
+  if (!fams.length) { $('fams').innerHTML = '<p class="hint">Not enough listings yet.</p>'; return; }
+  const list = famsAll ? fams : fams.slice(0, 5);
+  $('fams').innerHTML = list.map(c => {
     const t1 = 100 * c.n_new_with_tags / c.n_listings, t2 = 100 * c.n_new_without_tags / c.n_listings;
-    const price = (c.discount_pct != null && c.discount_pct > 0 && c.avg_resale_price != null && c.avg_retail_price != null)
-      ? `<div class="price">Avg resale ${eur(c.avg_resale_price)} vs store ${eur(c.avg_retail_price)} (−${Math.round(c.discount_pct)}%)</div>` : '';
+    const price = c.discount_pct != null && c.discount_pct > 0 ? ` · −${Math.round(c.discount_pct)}% resale` : '';
     const open = openFam === c.category;
     return `<div class="fam ${open ? 'open' : ''}"><button aria-expanded="${open}" data-c="${esc(c.category)}">
-      <span class="rank">${i + 1}</span>
-      <span><span class="name">${esc(c.category)}<small>${c.n_listings} listings</small></span>
-        <div class="track" role="img" aria-label="${Math.round(c.pct_new)}% new"><div class="t1" style="width:${t1}%"></div><div class="t2" style="width:${t2}%"></div></div></span>
-      <span class="right"><b>${Math.round(c.pct_new)}%</b><span>new<span class="chev">›</span></span></span>${price}</button>
-      ${open ? `<div class="more" id="more">Loading photos…</div>` : ''}</div>`;
-  }).join('') + (fams.length > 10 && !famsAll ? `<button class="btn sec showall" onclick="famsAll=true;render()">Show all ${fams.length} families</button>` : '');
+      <span class="name">${esc(c.category)}<small>${c.n_listings} listings${price}</small></span>
+      <span class="track" role="img" aria-label="${Math.round(c.pct_new)}% new"><span class="t1" style="width:${t1}%"></span><span class="t2" style="width:${t2}%"></span></span>
+      <span class="pc">${Math.round(c.pct_new)}%</span></button>
+      ${open ? `<div class="more" id="more">Loading…</div>` : ''}</div>`;
+  }).join('');
   if (openFam) fillMore(openFam);
 }
 $('fams').addEventListener('click', e => {
@@ -367,17 +341,15 @@ async function fillMore(cat) {
     const rows = famCache[cat].slice(0, 12), el = $('more');
     if (!el || openFam !== cat) return;
     el.innerHTML = rows.length
-      ? `<div class="thumbs">${rows.map(l => `<a class="thumb" href="${esc(l.source_url || '#')}" target="_blank" rel="noopener"><img loading="lazy" referrerpolicy="no-referrer" src="${esc(l.image_url)}" alt=""><div><b>${l.price_eur != null ? eur(l.price_eur) : ''}</b>${esc(COND[l.condition_norm] || l.condition || '')}</div></a>`).join('')}</div>
-         <p class="hint" style="margin:10px 0 0">Showing listings tied to one of your exact products.</p>`
-      : '<p class="hint" style="margin:0">The agent sorted these listings into this family from their photos. Previews are only shown for listings tied to one of your exact products, and none are yet.</p>';
-  } catch (e) { const el = $('more'); if (el) el.innerHTML = '<p class="hint" style="margin:0">Photos are not available right now.</p>'; }
+      ? `<div class="thumbs">${rows.map(l => `<a class="thumb" href="${esc(l.source_url || '#')}" target="_blank" rel="noopener"><img loading="lazy" referrerpolicy="no-referrer" src="${esc(l.image_url)}" alt=""><div><b>${l.price_eur != null ? eur(l.price_eur) : ''}</b>${esc(COND[l.condition_norm] || l.condition || '')}</div></a>`).join('')}</div>`
+      : '<span class="hint">No photos yet.</span>';
+  } catch (e) { const el = $('more'); if (el) el.innerHTML = '<span class="hint">No photos available.</span>'; }
 }
 function renderProducts() {
-  const ps = (D.products || []).filter(p => p.n_listings >= 1).sort((a, b) => b.n_listings - a.n_listings || b.pct_new - a.pct_new).slice(0, 12);
-  $('prods').innerHTML = ps.length ? ps.map(p => `<div class="pcard">${p.image_url ? `<img loading="lazy" src="${img(p.image_url, 400)}" alt="">` : ''}
-    <div class="b"><div class="t">${esc(p.title)}</div>
-    <div class="m"><span>${p.n_listings} listing${p.n_listings > 1 ? 's' : ''}</span><span class="pill ${p.pct_new >= 50 ? 'new' : ''}">${Math.round(p.pct_new)}% new</span></div></div></div>`).join('')
-    : '<p class="hint">No exact product identified yet.</p>';
+  const ps = (D.products || []).filter(p => p.n_listings >= 1).sort((a, b) => b.n_listings - a.n_listings || b.pct_new - a.pct_new).slice(0, 8);
+  $('prods').innerHTML = ps.length ? ps.map(p => `<div class="pcard">${p.image_url ? `<img loading="lazy" src="${img(p.image_url, 300)}" alt="">` : ''}
+    <div class="b"><div class="t">${esc(p.title)}</div><span class="pill ${p.pct_new >= 50 ? 'new' : ''}">${Math.round(p.pct_new)}% new</span></div></div>`).join('')
+    : '<p class="hint">None yet.</p>';
 }
 function renderLog(run) {
   const el = $('log');
@@ -390,9 +362,9 @@ function renderLog(run) {
 let bsT = null, bsSeq = 0, bsRes = [];
 const bsBadge = x => x.is_ecommerce
   ? (x.platform === 'Shopify' && x.product_count
-      ? `<span class="bs-b ok">E-commerce · Shopify · ${x.product_count.toLocaleString('en-US')}${x.product_count_capped ? '+' : ''} products</span>`
+      ? `<span class="bs-b ok">Shopify · ${x.product_count.toLocaleString('en-US')}${x.product_count_capped ? '+' : ''} products</span>`
       : `<span class="bs-b">E-commerce${x.platform ? ' · ' + esc(x.platform) : ''}</span>`)
-  : '<span class="bs-b no">Not an e-commerce brand</span>';
+  : '<span class="bs-b no">Not e-commerce</span>';
 function bsInput() {
   clearTimeout(bsT);
   const v = $('bs-q').value.trim();
@@ -401,14 +373,14 @@ function bsInput() {
 }
 async function bsRun(v) {
   const n = ++bsSeq, dd = $('bs-dd');
-  dd.classList.remove('hide'); dd.innerHTML = '<div class="bs-msg">Searching the web…</div>';
+  dd.classList.remove('hide'); dd.innerHTML = '<div class="bs-msg">Searching…</div>';
   try {
     const r = await api('/api/brands/search?q=' + encodeURIComponent(v));
     if (n !== bsSeq) return;
     bsRes = r.results || [];
-    dd.innerHTML = bsRes.length ? bsRes.map((x, i) => `<button class="bs-row" data-i="${i}" role="option"><img src="${esc(x.favicon)}" alt="" referrerpolicy="no-referrer"><span class="nm"><b>${esc(x.name)}</b><small>${esc(x.domain)} · ${esc(x.reason)}</small></span>${bsBadge(x)}</button>`).join('')
+    dd.innerHTML = bsRes.length ? bsRes.map((x, i) => `<button class="bs-row" data-i="${i}" role="option"><img src="${esc(x.favicon)}" alt="" referrerpolicy="no-referrer"><span class="nm"><b>${esc(x.name)}</b><small>${esc(x.domain)}</small></span>${bsBadge(x)}</button>`).join('')
       : '<div class="bs-msg">No brand found.</div>';
-  } catch (e) { if (n === bsSeq) dd.innerHTML = '<div class="bs-msg">Search failed, try again.</div>'; }
+  } catch (e) { if (n === bsSeq) dd.innerHTML = '<div class="bs-msg">Search failed.</div>'; }
 }
 $('bs-dd').addEventListener('click', e => { const b = e.target.closest('.bs-row'); if (b) bsPick(+b.dataset.i); });
 document.addEventListener('click', e => { if (!e.target.closest('#bsearch')) $('bs-dd').classList.add('hide'); });
@@ -417,10 +389,10 @@ function bsPick(i) {
   const x = bsRes[i]; if (!x) return;
   $('bs-dd').classList.add('hide'); $('bs-q').value = x.name;
   const act = !x.is_ecommerce ? ''
-    : x.known_slug ? `<button class="btn" onclick="bsAnalyze('${esc(x.known_slug)}')">Analyze resale on Vinted</button>`
-    : '<span class="hint">Vinted analysis available on request</span>';
+    : x.known_slug ? `<button class="btn" onclick="bsAnalyze('${esc(x.known_slug)}')">Analyze</button>`
+    : '<span class="hint">On request</span>';
   $('bs-card').className = 'bs-card';
-  $('bs-card').innerHTML = `<img src="${esc(x.favicon)}" alt="" referrerpolicy="no-referrer"><div class="nm"><b>${esc(x.name)}</b><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.domain)}</a><div class="hint">${esc(x.reason)}</div></div>${bsBadge(x)}${act}`;
+  $('bs-card').innerHTML = `<img src="${esc(x.favicon)}" alt="" referrerpolicy="no-referrer"><div class="nm"><b>${esc(x.name)}</b><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.domain)}</a></div>${bsBadge(x)}${act}`;
 }
 function bsAnalyze(slug) {
   const o = [...$('brand').options].find(o => o.value === slug);
@@ -428,21 +400,21 @@ function bsAnalyze(slug) {
 }
 
 /* ---------- Refresh flow ---------- */
-const STEPS = ['Reading Vinted', 'Recognizing your products', 'Learning', 'Writing recommendations'];
+const STEPS = ['Reading Vinted', 'Recognizing', 'Learning', 'Advising'];
 const PH = {start:0, collect:0, identify:1, learn:2, insights:3, done:4};
 let poll = null, fails = 0;
 function showProgress(run, failed) {
   $('progress').classList.remove('hide');
   const ph = (run.log || []).map(l => l.phase).filter(p => p in PH).pop();
   const idx = run.status === 'done' ? 4 : (ph != null ? PH[ph] : 0);
-  $('pg-title').textContent = failed ? 'Something went wrong, try again.'
-    : run.status === 'done' ? 'Done. Your data is up to date.'
-    : run.status === 'queued' ? 'Starting…' : 'Refreshing your data. This takes a few minutes.';
+  $('pg-title').textContent = failed ? 'Failed. Try again.'
+    : run.status === 'done' ? 'Up to date.'
+    : run.status === 'queued' ? 'Starting…' : 'Refreshing, a few minutes…';
   $('pg-steps').className = 'steps' + (failed ? ' err' : '');
   $('pg-steps').innerHTML = STEPS.map((s, i) => `<li class="${i < idx ? 'ok' : (i === idx && !failed ? 'act' : '')}"><i>${i < idx ? '✓' : i + 1}</i>${s}</li>`).join('');
 }
 function endRun(failed) {
-  clearInterval(poll); poll = null; $('b-agent').disabled = false; $('b-agent').textContent = 'Refresh from Vinted';
+  clearInterval(poll); poll = null; $('b-agent').disabled = false; $('b-agent').textContent = 'Refresh';
   if (!failed) setTimeout(() => { if (!poll) $('progress').classList.add('hide'); }, 4000);
 }
 function watch(runId) {
@@ -474,32 +446,31 @@ let cur = null, cats = [], searchTimer = null, saving = false, nAnswers = 0;
 async function countLabels() {
   try { nAnswers = (await api('/api/labels/count?brand=' + brand())).count; showCount(); } catch (e) {}
 }
-function showCount() { $('lab-count').textContent = `${nAnswers} answer${nAnswers === 1 ? '' : 's'} — each one makes the agent more accurate`; }
+function showCount() { $('lab-count').textContent = `${nAnswers} answer${nAnswers === 1 ? '' : 's'}`; }
 async function loadCats() {
   try { cats = await api('/api/categories?brand=' + brand()); } catch (e) { cats = []; }
-  const names = cats.filter(c => c.category !== 'Autre').slice(0, 14).map(c => c.category);
+  const names = cats.filter(c => c.category !== 'Autre').slice(0, 12).map(c => c.category);
   $('l-cats').innerHTML = names.map(c => `<button data-c="${esc(c)}">${esc(c)}</button>`).join('') + '<button data-c="Autre">Other</button>';
 }
 function toggleNo(on) { $('no-panel').classList.toggle('hide', !on); if (on) $('l-q').blur(); }
 const guessName = c => c && (c.match_product_title || c.match_category);
 async function nextLabel() {
   toggleNo(false);
-  try { cur = await api('/api/labels/next?brand=' + brand()); } catch (e) { cur = null; $('q-h').textContent = 'Something went wrong, try again.'; return; }
+  try { cur = await api('/api/labels/next?brand=' + brand()); } catch (e) { cur = null; $('q-h').textContent = 'Something went wrong.'; return; }
   if (!cur) {
-    $('l-img').removeAttribute('src'); $('l-title').textContent = 'All caught up'; $('l-sub').textContent = '';
-    $('q-h').textContent = 'No more listings to check. Thank you!'; $('q-guess').innerHTML = ''; $('q-btns').classList.add('hide'); return;
+    $('l-img').removeAttribute('src'); $('l-title').textContent = '';
+    $('q-h').textContent = 'All caught up. Thanks!'; $('q-guess').innerHTML = ''; $('q-btns').classList.add('hide'); return;
   }
   $('q-btns').classList.remove('hide');
   $('l-img').src = cur.image_url || '';
   $('l-title').textContent = cur.title || '';
-  $('l-sub').textContent = [cur.country && cur.country.toUpperCase(), COND[cur.condition_norm] || cur.condition, cur.price_eur != null && eur(cur.price_eur)].filter(Boolean).join(' · ');
   const g = guessName(cur);
   if (g) {
-    $('q-h').textContent = `Is this your ${g}?`;
-    $('q-guess').innerHTML = cur.match_product_image ? `<div class="guessimg"><img src="${img(cur.match_product_image, 160)}" alt=""><span class="hint">The agent's guess, from your catalog</span></div>` : '';
+    $('q-h').textContent = `Is this ${g}?`;
+    $('q-guess').innerHTML = cur.match_product_image ? `<img src="${img(cur.match_product_image, 160)}" alt="">` : '';
     $('b-yes').classList.remove('hide');
   } else {
-    $('q-h').textContent = "We couldn't tell what this is. Which one is it?";
+    $('q-h').textContent = 'Which one is it?';
     $('q-guess').innerHTML = ''; $('b-yes').classList.add('hide'); toggleNo(true);
   }
 }
@@ -516,7 +487,7 @@ async function postLabel(extra) {
   try {
     await api('/api/labels', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({listing_id: cur.id, ...extra})});
     nAnswers++; showCount(); saving = false; await nextLabel();
-  } catch (e) { saving = false; $('q-h').textContent = 'Something went wrong, try again.'; }
+  } catch (e) { saving = false; $('q-h').textContent = 'Something went wrong.'; }
 }
 function answerYes() { if (cur && (cur.match_product_id || cur.match_category)) postLabel({product_id: cur.match_product_id || null, category: cur.match_category || null}); }
 $('l-cats').addEventListener('click', e => { const b = e.target.closest('button'); if (b) postLabel({product_id: null, category: b.dataset.c}); });
