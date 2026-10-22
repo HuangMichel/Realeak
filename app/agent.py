@@ -737,11 +737,11 @@ COLLECT_TOOLS = [
      "parameters": {"type": "object", "properties": {"reason": {"type": "string"}}, "required": ["reason"]}},
 ]
 
-COLLECT_SYSTEM = """Tu es l'agent de collecte de Resale Radar. Objectif : maximiser le nombre d'annonces Vinted UNIQUES
+COLLECT_SYSTEM = """Tu es l'agent de collecte de Realeak. Objectif : maximiser le nombre d'annonces Vinted UNIQUES
 de la marque avec le minimum d'appels. Chaque appel coute du temps et de l'argent : budget maximum 12 appels.
 Commence par fr page 1. Ensuite, decide d'apres le rendement : une page est rentable si le nombre d'annonces NOUVELLES
 depasse ~10 % des cartes. Arrete (finish_collection) quand le rendement marginal tombe sous ~10 % ou que le budget est
-atteint. Explique chaque choix en une phrase courte en francais dans le champ `why`. Appelle toujours un outil, un seul
+atteint. Explique chaque choix en une phrase courte EN ANGLAIS dans le champ `why`. Appelle toujours un outil, un seul
 a la fois."""
 
 

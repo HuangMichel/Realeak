@@ -35,7 +35,7 @@ def process_next() -> str | None:
         return None
     run_id, brand = rows[0]["id"], rows[0]["brand"]
     x("UPDATE runs SET status='running' WHERE id=:i AND status='queued'", i=run_id)
-    _append_log(run_id, "queue", "Pris en charge par le worker Codex")
+    _append_log(run_id, "queue", "Picked up by the agent")
     t0 = time.time()
     try:
         ml = int(os.environ.get("AGENT_MAX_LISTINGS") or 0) or None
