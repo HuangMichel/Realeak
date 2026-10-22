@@ -20,7 +20,7 @@ The measured value is outside the no-data range: guessing underestimates the rea
 | Listings classified into a product family | 281 / 315 (89%) | 315 / 315 (100%) |
 | Exact product | 145 text guesses; agreeing with the photo check on 6 of 28 | 47 photo-verified, the rest flagged "unknown" |
 
-Vinted titles are vague ("sac cabaia bleu"), so keywords "find" a product for half the listings but are mostly wrong. The agent names a product only when the photo supports it.
+Vinted titles are vague ("sac cabaia bleu"), so keywords "find" a product for half the listings but disagree with the photo check 22 times out of 28. The agent names a product only when the photo supports it.
 
 ## 3. Time and cost
 
