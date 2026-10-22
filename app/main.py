@@ -31,6 +31,11 @@ def index():
     return FileResponse(ROOT / "static" / "index.html")
 
 
+@app.get("/slide")
+def slide():
+    return FileResponse(ROOT / "static" / "slide.html")
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True, "time": now()}

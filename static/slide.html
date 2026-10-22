@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resale Radar - Pitch slide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* 1rem = 1/120 of the slide width = 16px at 1920x1080 */
+  :root {
+    --navy: #0B1020;
+    --card: #121A33;
+    --line: #243056;
+    --text: #FFFFFF;
+    --muted: #9AA6C7;
+    --accent: #2EE6A6;
+  }
+  html { font-size: calc(min(100vw, 177.78vh) / 120); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--navy); overflow: hidden; }
+  body {
+    display: grid; place-items: center;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    color: var(--text);
+  }
+  .slide {
+    width: min(100vw, 177.78vh);
+    aspect-ratio: 16 / 9;
+    background:
+      radial-gradient(70rem 40rem at 95% -10%, rgba(46,230,166,.10), transparent 60%),
+      var(--navy);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .n { color: var(--accent); font-weight: 700; }
+
+  /* header */
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 3rem;
+    padding: 2.4rem 4rem 1.6rem;
+  }
+  .brand { display: flex; align-items: center; gap: 1rem; flex: none; }
+  .brand svg { width: 4rem; height: 4rem; }
+  .brand span { font-size: 3rem; font-weight: 800; letter-spacing: -0.02em; }
+  .brand span em { font-style: normal; color: var(--accent); }
+  .tagline {
+    margin: 0; max-width: 72rem; font-size: 1.65rem; line-height: 1.38;
+    font-weight: 500; color: #DCE3F7;
+  }
+
+  /* columns */
+  main {
+    flex: 1; min-height: 0;
+    display: grid; grid-template-columns: .95fr 1.1fr 1.3fr; gap: 1.6rem;
+    padding: 0 4rem 1.6rem;
+  }
+  .col {
+    background: var(--card); border: 1px solid var(--line); border-radius: 1.1rem;
+    padding: 1.8rem 2rem; display: flex; flex-direction: column; min-width: 0;
+  }
+  .col h2 {
+    margin: 0 0 1.4rem; font-size: 1.15rem; font-weight: 700; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  .col p { margin: 0; font-size: 1.65rem; line-height: 1.45; color: #E6EBFA; }
+
+  /* problem */
+  .stat { margin-top: auto; padding-top: 1rem; }
+  .stat .big {
+    font-size: 8.4rem; line-height: 1; font-weight: 800; letter-spacing: -0.04em;
+    color: var(--accent);
+  }
+  .stat .cap { margin-top: .8rem; font-size: 1.45rem; line-height: 1.4; color: #E6EBFA; }
+  .stat .note { margin-top: .7rem; font-size: 1.1rem; color: var(--muted); }
+
+  /* steps */
+  ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1.5rem; }
+  li { display: flex; gap: 1.1rem; align-items: flex-start; }
+  li .num {
+    flex: none; width: 2.7rem; height: 2.7rem; border-radius: 50%;
+    background: var(--accent); color: var(--navy); font-weight: 800; font-size: 1.4rem;
+    display: grid; place-items: center; margin-top: .1rem;
+  }
+  li .txt { font-size: 1.45rem; line-height: 1.42; color: #D5DDF3; }
+  li .txt b { color: var(--text); font-weight: 700; }
+
+  /* proof table */
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 1.3rem; }
+  th:nth-child(1), td:nth-child(1) { width: 32%; }
+  th:nth-child(2), td:nth-child(2) { width: 24%; }
+  th:nth-child(3), td:nth-child(3), th:nth-child(4), td:nth-child(4) { width: 22%; }
+  th {
+    text-align: left; font-size: 1.05rem; font-weight: 600; color: var(--muted);
+    padding: 0 .5rem .8rem 0; border-bottom: 1px solid var(--line); line-height: 1.25;
+  }
+  td { padding: 1.8rem .5rem 1.8rem 0; overflow-wrap: anywhere; border-bottom: 1px solid var(--line); vertical-align: middle; line-height: 1.3; }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { font-weight: 600; color: var(--text); }
+  td:not(:first-child) { color: var(--accent); font-weight: 700; font-size: 1.8rem; line-height: 1.2; }
+  tr.hl td:first-child { color: var(--accent); }
+  .run {
+    margin-top: auto; padding: 1.6rem 1.6rem; border: 1px solid var(--accent);
+    border-radius: .8rem; font-size: 1.7rem; font-weight: 600; background: rgba(46,230,166,.07);
+  }
+
+  /* footer */
+  footer {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    background: #070B18; border-top: 2px solid var(--accent);
+  }
+  footer div { padding: 1.3rem 4rem 1.4rem; font-size: 1.2rem; line-height: 1.5; color: #C5CFEA; }
+  footer div + div { border-left: 1px solid var(--line); padding-left: 2.5rem; }
+  footer div:first-child { padding-right: 2.5rem; }
+  footer b { color: var(--text); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+        <circle cx="32" cy="32" r="28" stroke="#2EE6A6" stroke-width="3"/>
+        <circle cx="32" cy="32" r="18" stroke="#2EE6A6" stroke-width="2.5" opacity=".6"/>
+        <circle cx="32" cy="32" r="8" stroke="#2EE6A6" stroke-width="2.5" opacity=".4"/>
+        <path d="M32 32 L52 14" stroke="#2EE6A6" stroke-width="4" stroke-linecap="round"/>
+        <path d="M32 32 L52 14 A28 28 0 0 1 59 32 Z" fill="#2EE6A6" opacity=".22"/>
+        <circle cx="44" cy="43" r="3.6" fill="#2EE6A6"/>
+        <circle cx="32" cy="32" r="3" fill="#fff"/>
+      </svg>
+      <span>Resale <em>Radar</em></span>
+    </div>
+    <p class="tagline">Vinted is the world's largest panel of disappointed customers. We tell brands which products their customers resell unworn, and why.</p>
+  </header>
+
+  <main>
+    <section class="col">
+      <h2>The problem</h2>
+      <p>Brands track returns. They don't see the products customers keep but don't want: those end up on Vinted, new, often with tags still on.</p>
+      <div class="stat">
+        <div class="big">57.8%</div>
+        <div class="cap">of the <span class="n">315</span> latest Cabaïa listings on Vinted are new (<span class="n">30.5%</span> with tags)</div>
+        <div class="note">real data, 22 Oct 2026</div>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>The agent</h2>
+      <ol>
+        <li><span class="num">1</span><span class="txt"><b>Collect:</b> decides which Vinted pages and countries to read through Keenable, stops when new listings dry up</span></li>
+        <li><span class="num">2</span><span class="txt"><b>Identify:</b> compares each listing photo to <span class="n">2,038</span> catalog products (vision), escalates hard cases to a stronger model, says 'unknown' rather than guess</span></li>
+        <li><span class="num">3</span><span class="txt"><b>Learn:</b> stores aliases and confirmed photos in memory (<span class="n">77</span> after one run) and human corrections, so the next run is more accurate</span></li>
+        <li><span class="num">4</span><span class="txt"><b>Explain:</b> per product family, % resold new, resale discount, and written insights for the product team</span></li>
+      </ol>
+    </section>
+
+    <section class="col">
+      <h2>Proof (before / after)</h2>
+      <table>
+        <thead>
+          <tr><th>Method</th><th>Family accuracy</th><th>Exact product</th><th>Cost / listing</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Keyword workflow (no AI)</td><td>{{BENCH_BASE_CAT}}</td><td>{{BENCH_BASE_REF}}</td><td>$0</td></tr>
+          <tr><td>Agent</td><td>{{BENCH_AGENT_CAT}}</td><td>{{BENCH_AGENT_REF}}</td><td>{{BENCH_AGENT_COST}}</td></tr>
+          <tr class="hl"><td>Agent + memory</td><td>{{BENCH_MEM_CAT}}</td><td>{{BENCH_MEM_REF}}</td><td>{{BENCH_MEM_COST}}</td></tr>
+        </tbody>
+      </table>
+      <div class="run">Full run: <span class="n">315</span> listings in <span class="n">8.7 min</span> for <span class="n">$0.29</span></div>
+    </section>
+  </main>
+
+  <footer>
+    <div><b>Data layer:</b> Aiven PostgreSQL (catalog, listings, matches, agent memory, runs) · Aiven Runtime · Keenable live fetch · OpenAI vision</div>
+    <div><b>First customers:</b> product teams of mid-size fashion brands with a strong Vinted footprint (bags, accessories, kids). Free resale audit → monthly radar per brand.</div>
+  </footer>
+</div>
+</body>
+</html>
