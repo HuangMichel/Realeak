@@ -7,3 +7,4 @@ worker.log
 deliverables/video/
 *.mp4
 aiven-env.txt
+*.log
