@@ -9,7 +9,7 @@ Question: "What share of our items listed second-hand on Vinted are brand new?"
 | | Answer | Basis |
 |---|---|---|
 | GPT-6.1 without data | About 30% (range 20 to 45%) | Its own words: low confidence, judgment-based estimate |
-| **Realeak (agent + data)** | **55.6% new** (608 of 1,094 listings; 57.8% on the first 315) | Measured, listing by listing |
+| **Realeak (agent + data)** | **55.5% new** (611 of 1,101 listings; 57.8% on the first 315) | Measured, listing by listing |
 
 The measured value is outside the no-data range: guessing underestimates the real share by almost half.
 
