@@ -58,6 +58,11 @@
   .steps li.ok { color:var(--ink); background:var(--acc2); }
   .steps li.ok i { background:var(--tt-ok); border-color:var(--tt-ok); color:#fff; }
   .steps.err li { opacity:.5; }
+  .pg-now { display:flex; gap:12px; justify-content:space-between; align-items:baseline; margin-top:8px; font-size:13px; color:var(--mut); }
+  .pg-now b { color:var(--ink); font-weight:600; }
+  .pg-now .tm { flex:none; font:500 13px var(--font-mono); color:var(--ink); }
+  .pg-bar { height:6px; border-radius:3px; background:var(--tt-platine); overflow:hidden; margin-top:6px; }
+  .pg-bar span { display:block; height:100%; width:0; background:var(--tt-ok); transition:width .4s; }
   @keyframes pulse { 50% { box-shadow:0 0 0 5px #72fd4e40; } }
   #err { background:#fff1f1; border:1px solid var(--tt-red); border-radius:14px; padding:8px 14px; margin-bottom:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 
@@ -78,14 +83,18 @@
 
   /* families */
   .fam { background:var(--card); border:1px solid var(--line); border-radius:14px; margin-bottom:6px; overflow:hidden; }
-  .fam > button { all:unset; box-sizing:border-box; display:grid; grid-template-columns:minmax(0,230px) minmax(0,1fr) 52px; gap:12px; align-items:center; width:100%; padding:9px 16px; cursor:pointer; }
+  .fam > button { all:unset; box-sizing:border-box; display:grid; grid-template-columns:minmax(0,230px) minmax(0,1fr) 84px; gap:12px; align-items:center; width:100%; padding:9px 16px; cursor:pointer; }
   .fam > button:hover { background:var(--tt-seasalt); }
   .fam > button:focus-visible { outline:3px solid var(--tt-green-dk); outline-offset:-3px; }
   .fam .name { font:700 15px/1.25 var(--font-head); letter-spacing:-.01em; }
   .fam .name small { display:block; font:400 12px var(--font-body); color:var(--mut); }
   .track { display:flex; height:10px; border-radius:5px; background:var(--tt-platine); overflow:hidden; }
   .track .t1 { background:var(--red-dk); } .track .t2 { background:var(--red-lt); }
-  .fam .pc { font:700 20px/1 var(--font-head); letter-spacing:-.02em; text-align:right; }
+  .fam .pc { font:700 20px/1 var(--font-head); letter-spacing:-.02em; text-align:right; white-space:nowrap; }
+  .fam .pc small { font:500 12px var(--font-body); letter-spacing:0; color:var(--mut); margin-left:3px; }
+  .leg { display:flex; flex-wrap:wrap; gap:4px 16px; margin:-2px 0 8px; font-size:12.5px; color:var(--mut); }
+  .leg span { display:inline-flex; align-items:center; gap:6px; }
+  .leg i { width:12px; height:10px; border-radius:3px; display:inline-block; box-shadow:inset 0 0 0 1px #0f0f101f; }
   .fam .more { border-top:1px solid var(--line); padding:10px 16px 12px; background:var(--tt-seasalt); }
   .thumbs { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px; }
   .thumb { display:block; text-decoration:none; color:var(--ink); background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:12px; }
@@ -184,6 +193,8 @@
   <div id="progress" class="hide" aria-live="polite">
     <h3 id="pg-title">Starting…</h3>
     <ol class="steps" id="pg-steps"></ol>
+    <div class="pg-now"><span id="pg-line"></span><span class="tm" id="pg-time">0:00</span></div>
+    <div class="pg-bar hide" id="pg-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span id="pg-fill"></span></div>
   </div>
 
   <div class="hero">
@@ -197,6 +208,7 @@
   </div>
 
   <div class="sh"><h2 class="sec">Least wanted families</h2><button class="lnk hide" id="fam-all" onclick="famsAll=!famsAll;render()">Show all</button></div>
+  <div class="leg" aria-label="Legend"><span><i style="background:var(--red-dk)"></i>New, tags still on</span><span><i style="background:var(--red-lt)"></i>New, tags removed</span><span><i style="background:var(--tt-platine)"></i>Used</span></div>
   <div id="fams"></div>
 
   <div class="sh"><h2 class="sec">Agent recommendations</h2></div>
@@ -321,7 +333,7 @@ function renderFams(fams) {
     return `<div class="fam ${open ? 'open' : ''}"><button aria-expanded="${open}" data-c="${esc(c.category)}">
       <span class="name">${esc(c.category)}<small>${c.n_listings} listings${price}</small></span>
       <span class="track" role="img" aria-label="${Math.round(c.pct_new)}% new"><span class="t1" style="width:${t1}%"></span><span class="t2" style="width:${t2}%"></span></span>
-      <span class="pc">${Math.round(c.pct_new)}%</span></button>
+      <span class="pc" title="Share of this family's Vinted listings that are brand new">${Math.round(c.pct_new)}%<small>new</small></span></button>
       ${open ? `<div class="more" id="more">Loading…</div>` : ''}</div>`;
   }).join('');
   if (openFam) fillMore(openFam);
@@ -351,11 +363,11 @@ function renderProducts() {
     <div class="b"><div class="t">${esc(p.title)}</div><span class="pill ${p.pct_new >= 50 ? 'new' : ''}">${Math.round(p.pct_new)}% new</span></div></div>`).join('')
     : '<p class="hint">None yet.</p>';
 }
+const cleanMsg = m => String(m).replace(/Pris en charge par le worker Codex/g, 'Picked up by the agent worker').replace(/Codex worker/g, 'agent').replace(/Codex/g, 'the agent');
 function renderLog(run) {
   const el = $('log');
   if (!run || !(run.log || []).length) return;
-  const clean = m => String(m).replace(/Pris en charge par le worker Codex/g, 'Picked up by the agent worker').replace(/Codex worker/g, 'agent').replace(/Codex/g, 'the agent');
-  el.innerHTML = run.log.map(l => `<span class="ph">[${esc(l.phase)}]</span> ${esc(clean(l.msg))}`).join('\n');
+  el.innerHTML = run.log.map(l => `<span class="ph">[${esc(l.phase)}]</span> ${esc(cleanMsg(l.msg))}`).join('\n');
   el.scrollTop = el.scrollHeight;
 }
 
@@ -412,7 +424,10 @@ function bsAnalyze(slug) {
 /* ---------- Refresh flow ---------- */
 const STEPS = ['Reading Vinted', 'Recognizing', 'Learning', 'Advising'];
 const PH = {start:0, collect:0, identify:1, learn:2, insights:3, done:4};
-let poll = null, fails = 0;
+let poll = null, fails = 0, clock = null, runT0 = 0;
+const mmss = ms => { const s = Math.max(0, Math.floor(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function tickClock() { $('pg-time').textContent = mmss(Date.now() - runT0); }
+function stopClock() { clearInterval(clock); clock = null; }
 function showProgress(run, failed) {
   $('progress').classList.remove('hide');
   const ph = (run.log || []).map(l => l.phase).filter(p => p in PH).pop();
@@ -422,9 +437,29 @@ function showProgress(run, failed) {
     : run.status === 'queued' ? 'Starting…' : 'Refreshing, a few minutes…';
   $('pg-steps').className = 'steps' + (failed ? ' err' : '');
   $('pg-steps').innerHTML = STEPS.map((s, i) => `<li class="${i < idx ? 'ok' : (i === idx && !failed ? 'act' : '')}"><i>${i < idx ? '✓' : i + 1}</i>${s}</li>`).join('');
+
+  // live detail: step label + latest log line, elapsed timer, identify counter bar
+  const t0 = run.started_at ? Date.parse(run.started_at) : NaN;
+  runT0 = isNaN(t0) ? (runT0 || Date.now()) : t0;
+  if (run.status === 'running' || run.status === 'queued') { if (!clock) clock = setInterval(tickClock, 1000); tickClock(); }
+  else { stopClock(); const t1 = run.finished_at ? Date.parse(run.finished_at) : NaN; if (!isNaN(t1)) $('pg-time').textContent = mmss(t1 - runT0); }
+  const lines = (run.log || []).filter(l => l.phase in PH);
+  const last = lines[lines.length - 1];
+  let msg = last ? cleanMsg(last.msg).replace(/\s+/g, ' ').trim() : '';
+  if (msg.length > 80) msg = msg.slice(0, 79).replace(/\s+\S*$/, '') + '…';
+  $('pg-line').innerHTML = failed || run.status === 'done' ? ''
+    : run.status === 'queued' ? 'Waiting for the previous refresh to finish…'
+    : `<b>${STEPS[Math.min(idx, 3)]}</b>${msg ? ' · ' + esc(msg) : ''}`;
+  let frac = null;
+  if (run.status === 'running' && ph === 'identify') {
+    const m = [...(run.log || [])].reverse().filter(l => l.phase === 'identify').map(l => /(\d+)\/(\d+)/.exec(l.msg)).find(Boolean);
+    if (m && +m[2] > 0 && +m[1] <= +m[2]) frac = +m[1] / +m[2];
+  }
+  $('pg-bar').classList.toggle('hide', frac == null);
+  if (frac != null) { $('pg-fill').style.width = (100 * frac).toFixed(1) + '%'; $('pg-bar').setAttribute('aria-valuenow', Math.round(100 * frac)); }
 }
 function endRun(failed) {
-  clearInterval(poll); poll = null; $('b-agent').disabled = false; $('b-agent').textContent = 'Refresh';
+  clearInterval(poll); poll = null; stopClock(); $('b-agent').disabled = false; $('b-agent').textContent = 'Refresh';
   if (!failed) setTimeout(() => { if (!poll) $('progress').classList.add('hide'); }, 4000);
 }
 function watch(runId) {
