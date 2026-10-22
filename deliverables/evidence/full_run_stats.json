@@ -1,0 +1,27 @@
+{
+  "run_id": "full-65dac8",
+  "started_at": "2026-10-22T10:52:04.231816+00:00",
+  "finished_at": "2026-10-22T11:00:45.364122+00:00",
+  "stats": {
+    "llm_calls": 1201,
+    "input_tokens": 2392487,
+    "output_tokens": 78466,
+    "cost_usd": 0.2912,
+    "calls_fast": 1197,
+    "calls_smart": 4,
+    "seconds": 521.1,
+    "models": {
+      "fast": "gpt-6-luna",
+      "smart": "gpt-6.1-sol"
+    },
+    "listings_total": 315,
+    "matched": 47,
+    "unknown": 268,
+    "escalated": 0,
+    "identified_this_run": 315,
+    "errors": 0,
+    "memory_added": 77,
+    "collect_calls": 2,
+    "collected_new": 40
+  }
+}

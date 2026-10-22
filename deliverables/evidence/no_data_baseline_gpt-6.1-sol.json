@@ -1,0 +1,11 @@
+{
+  "share_resold_new_percent": 30,
+  "most_resold_new_families": [
+    "Adventurer backpacks",
+    "Interchangeable backpack pockets",
+    "Toiletry bags",
+    "Beanies with interchangeable pompoms"
+  ],
+  "confidence": "Low: judgment-based estimate, without a current Vinted sample.",
+  "answer": "My best estimate is about 30% of Cabaia listings being unused, with or without tags. A plausible range is 20–45%; this is a subjective range, not a statistical confidence interval.\n\nI would tentatively expect Adventurer backpacks and interchangeable pockets to lead in absolute numbers of unused listings, followed by toiletry bags and beanies. Pockets could have a particularly high unused share because buyers can accumulate multiple designs; unwanted gifts could also contribute across families. These are hypotheses, not observed findings.\n\nThis estimates the share of active listings, not completed sales. I would treat it as a working assumption for the product team, not a measured statement about current Vinted inventory."
+}
