@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import threading
 import traceback
 import uuid
@@ -91,25 +92,45 @@ def collect_brand(brand: str, countries: str = "fr,de", pages: int = 2):
     return collect.collect_all(brand, cs, pages)
 
 
+def _asof(s: str | None) -> str | None:
+    """ISO quelconque -> ISO UTC normalise (comparable en texte avec first_seen) ; None si vide."""
+    if not s:
+        return None
+    s = s.strip()
+    if "T" in s:
+        s = re.sub(r" (\d\d:\d\d)$", r"+\1", s)  # un "+" non encode dans l'URL arrive comme une espace
+    try:
+        d = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(400, f"bad datetime: {s}")
+    return (d if d.tzinfo else d.replace(tzinfo=timezone.utc)).astimezone(timezone.utc).isoformat()
+
+
+def _w(as_of: str | None):
+    return (" AND l.first_seen<=:asof", {"asof": as_of}) if as_of else ("", {})
+
+
 @app.get("/api/report/{brand}")
-def report(brand: str):
+def report(brand: str, as_of: str | None = None):
     _brand(brand)
-    n_list = q("SELECT COUNT(*) AS n FROM listings WHERE brand=:b", b=brand)[0]["n"]
+    as_of = _asof(as_of)
+    w, wp = _w(as_of)
+    n_list = q("SELECT COUNT(*) AS n FROM listings l WHERE l.brand=:b" + w, b=brand, **wp)[0]["n"]
     n_matched = q("""SELECT COUNT(*) AS n FROM matches m JOIN listings l ON l.id=m.listing_id
-                     WHERE l.brand=:b AND m.product_id IS NOT NULL""", b=brand)[0]["n"]
+                     WHERE l.brand=:b AND m.product_id IS NOT NULL""" + w, b=brand, **wp)[0]["n"]
     n_unknown = q("""SELECT COUNT(*) AS n FROM matches m JOIN listings l ON l.id=m.listing_id
-                     WHERE l.brand=:b AND m.product_id IS NULL""", b=brand)[0]["n"]
+                     WHERE l.brand=:b AND m.product_id IS NULL""" + w, b=brand, **wp)[0]["n"]
     rows = q("""SELECT p.id AS product_id, p.title, p.image_url, p.price_eur, COUNT(l.id) AS n_listings,
         SUM(CASE WHEN l.condition_norm='new_with_tags' THEN 1 ELSE 0 END) AS n_new_with_tags,
         SUM(CASE WHEN l.condition_norm='new_without_tags' THEN 1 ELSE 0 END) AS n_new_without_tags,
         AVG(l.price_eur) AS avg_resale_price
         FROM matches m JOIN listings l ON l.id=m.listing_id JOIN products p ON p.id=m.product_id
-        WHERE l.brand=:b GROUP BY p.id, p.title, p.image_url, p.price_eur
-        ORDER BY COUNT(l.id) DESC""", b=brand)
+        WHERE l.brand=:b""" + w + """ GROUP BY p.id, p.title, p.image_url, p.price_eur
+        ORDER BY COUNT(l.id) DESC""", b=brand, **wp)
     cc = defaultdict(lambda: defaultdict(int))
     for r in q("""SELECT m.product_id AS pid, l.country AS c, COUNT(*) AS n FROM matches m
-                  JOIN listings l ON l.id=m.listing_id WHERE l.brand=:b AND m.product_id IS NOT NULL
-                  GROUP BY m.product_id, l.country""", b=brand):
+                  JOIN listings l ON l.id=m.listing_id WHERE l.brand=:b AND m.product_id IS NOT NULL""" + w + """
+                  GROUP BY m.product_id, l.country""", b=brand, **wp):
         cc[r["pid"]][r["c"]] = r["n"]
     tot_new = 0
     for r in rows:
@@ -124,7 +145,7 @@ def report(brand: str):
         pr = r["price_eur"]
         r["discount_pct"] = round(100 * (1 - avg / pr), 1) if avg is not None and pr else None
         r["countries"] = dict(cc[r["product_id"]])
-    cats, categorized = _categories_report(brand)
+    cats, categorized = _categories_report(brand, as_of)
     return {
         "totals": {"listings": n_list, "matched": n_matched, "unknown": n_unknown,
                    "unmatched": n_list - n_matched - n_unknown, "categorized": categorized,
@@ -134,14 +155,15 @@ def report(brand: str):
     }
 
 
-def _categories_report(brand: str):
+def _categories_report(brand: str, as_of: str | None = None):
     """Niveau CATEGORIE (product_type du catalogue) : robuste meme quand la reference exacte est incertaine."""
     retail = {r["t"]: r["avg_price"] for r in q(
         "SELECT product_type AS t, AVG(price_eur) AS avg_price FROM products WHERE brand=:b GROUP BY product_type", b=brand)}
     g = defaultdict(list)
+    w, wp = _w(as_of)
     for r in q("""SELECT COALESCE(m.category, p.product_type) AS cat, l.condition_norm AS cn, l.price_eur AS price
                   FROM matches m JOIN listings l ON l.id=m.listing_id LEFT JOIN products p ON p.id=m.product_id
-                  WHERE l.brand=:b""", b=brand):
+                  WHERE l.brand=:b""" + w, b=brand, **wp):
         if r["cat"]:
             g[r["cat"]].append(r)
     out, total = [], 0
@@ -160,6 +182,43 @@ def _categories_report(brand: str):
                     "discount_pct": round(100 * (1 - avg / rp), 1) if avg is not None and rp else None})
     out.sort(key=lambda d: -d["n_listings"])
     return out, total
+
+
+FAM_SKIP = {"Autre"}  # meme regle que static/index.html
+
+
+def _kpis(brand: str, as_of: str | None) -> dict:
+    """Les 3 chiffres des cartes, calcules comme le front : annonces, revendus neufs, famille la moins voulue."""
+    w, wp = _w(as_of)
+    n = q("SELECT COUNT(*) AS n FROM listings l WHERE l.brand=:b" + w, b=brand, **wp)[0]["n"]
+    cats, tot = _categories_report(brand, as_of)
+    nw = sum(c["n_new_with_tags"] + c["n_new_without_tags"] for c in cats)
+    fams = sorted((c for c in cats if c["n_listings"] >= 5 and c["category"] not in FAM_SKIP),
+                  key=lambda c: (-c["pct_new"], -c["n_listings"]))
+    top = next((c for c in fams if c["n_listings"] >= 15), None)
+    return {"listings": n, "resold_new": nw, "pct_new": round(100 * nw / tot, 1) if tot else None,
+            "most_unwanted": {"category": top["category"], "pct_new": top["pct_new"]} if top else None}
+
+
+@app.get("/api/report/{brand}/compare")
+def report_compare(brand: str, since: str):
+    _brand(brand)
+    since = _asof(since)
+    now_k, then_k = _kpis(brand, None), _kpis(brand, since)
+    a, b = now_k["pct_new"], then_k["pct_new"]
+    return {"now": now_k, "then": then_k, "since": since,
+            "delta": {"listings": now_k["listings"] - then_k["listings"],
+                      "resold_new": now_k["resold_new"] - then_k["resold_new"],
+                      "pct_new_pts": round(a - b, 1) if a is not None and b is not None else None}}
+
+
+@app.get("/api/syncs/{brand}")
+def syncs(brand: str):
+    _brand(brand)
+    rows = q("""SELECT DISTINCT finished_at FROM runs WHERE brand=:b AND status='done' AND finished_at IS NOT NULL
+                ORDER BY finished_at DESC LIMIT 20""", b=brand)
+    first = q("SELECT MIN(first_seen) AS t FROM listings WHERE brand=:b", b=brand)[0]["t"]
+    return {"syncs": [r["finished_at"] for r in rows], "earliest": first}
 
 
 @app.get("/api/categories")

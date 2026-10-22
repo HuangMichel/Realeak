@@ -73,7 +73,11 @@
   .hero .row { display:flex; justify-content:space-between; align-items:baseline; gap:4px 16px; flex-wrap:wrap; }
   .hero p { margin:0; font-size:15px; color:#ffffffd9; }
   .hero .upd { font-size:12px; color:#ffffff80; }
-  .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
+  .cmp { display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:10px; font-size:12.5px; color:var(--mut); }
+  .cmp select, .cmp input { font:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:3px 8px; }
+  .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:6px; }
+  .kpi .dl { display:block; margin-top:2px; font-size:12.5px; color:var(--mut); }
+  .kpi .dl.up { color:var(--red-dk); } .kpi .dl.down { color:var(--tt-ok); }
   .kpi { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:10px 16px; }
   .kpi b { display:block; font:700 28px/1.15 var(--font-head); letter-spacing:-.025em; }
   .kpi span { display:block; color:var(--mut); font-size:13.5px; }
@@ -201,10 +205,18 @@
     <h2 id="h-title">Loading…</h2>
     <div class="row"><p id="h-sub"></p><div class="upd" id="h-upd"></div></div>
   </div>
+  <div class="cmp">
+    <label for="cmp-sel">Compare to</label>
+    <select id="cmp-sel" onchange="onCmp()">
+      <option value="sync">Last sync</option><option value="day">Yesterday</option>
+      <option value="week">Last 7 days</option><option value="custom">Custom date…</option>
+    </select>
+    <input type="date" id="cmp-date" class="hide" onchange="loadCompare()">
+  </div>
   <div class="kpis">
-    <div class="kpi"><b id="k-list">–</b><span>Listings on Vinted</span></div>
-    <div class="kpi"><b id="k-new">–</b><span>Resold new</span></div>
-    <div class="kpi"><b id="k-fam">–</b><span id="k-fam2">Most unwanted</span></div>
+    <div class="kpi"><b id="k-list">–</b><span>Listings on Vinted</span><small class="dl" id="d-list"></small></div>
+    <div class="kpi"><b id="k-new">–</b><span>Resold new</span><small class="dl" id="d-new"></small></div>
+    <div class="kpi"><b id="k-fam">–</b><span id="k-fam2">Most unwanted</span><small class="dl" id="d-fam"></small></div>
   </div>
 
   <div class="sh"><h2 class="sec">Least wanted families</h2><button class="lnk hide" id="fam-all" onclick="famsAll=!famsAll;render()">Show all</button></div>
@@ -286,7 +298,44 @@ async function loadAll() {
     [D, RUNS] = await Promise.all([api('/api/report/' + brand()), api('/api/runs?brand=' + brand())]);
     $('err').classList.add('hide');
     render();
-  } catch (e) { $('err').classList.remove('hide'); }
+  } catch (e) { $('err').classList.remove('hide'); return; }
+  loadCompare();
+}
+
+/* ---------- Compare to (Shopify-style deltas on the KPI cards) ---------- */
+const DL = ['d-list', 'd-new', 'd-fam'];
+const fmtWhen = iso => new Date(iso).toLocaleString('en-GB', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+const sgn = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v);
+const arrow = v => v > 0 ? '▲' : v < 0 ? '▼' : '–';
+const tone = v => v > 0 ? 'up' : v < 0 ? 'down' : '';   // share of new going up is bad for the brand
+function setDl(id, cls, txt) { const e = $(id); e.className = 'dl ' + cls; e.textContent = txt; }
+function onCmp() { $('cmp-date').classList.toggle('hide', $('cmp-sel').value !== 'custom'); loadCompare(); }
+function cmpSince(sy) {
+  const m = $('cmp-sel').value;
+  if (m === 'day') return new Date(Date.now() - 864e5).toISOString();
+  if (m === 'week') return new Date(Date.now() - 7 * 864e5).toISOString();
+  if (m === 'custom') return $('cmp-date').value ? new Date($('cmp-date').value + 'T23:59:59').toISOString() : null;
+  return sy.syncs[1] || sy.earliest || null;   // previous sync, else the very first listing
+}
+async function loadCompare() {
+  const b = brand();
+  try {
+    const sy = await api('/api/syncs/' + b);
+    const since = cmpSince(sy);
+    if (!since) throw 0;
+    const C = await api('/api/report/' + b + '/compare?since=' + encodeURIComponent(since));
+    if (b === brand()) renderDeltas(C);
+  } catch (e) { DL.forEach(id => setDl(id, '', '')); }
+}
+function renderDeltas(C) {
+  const d = C.delta, n = C.now.most_unwanted, t = C.then.most_unwanted, when = ' since ' + fmtWhen(C.since);
+  setDl('d-list', '', `${arrow(d.listings)} ${sgn(d.listings)}${when}`);
+  const pts = d.pct_new_pts;
+  setDl('d-new', pts == null ? '' : tone(pts),
+    pts == null ? `${arrow(d.resold_new)} ${sgn(d.resold_new)}${when}` : `${arrow(pts)} ${sgn(pts)} pts (${sgn(d.resold_new)})${when}`);
+  if (!n) setDl('d-fam', '', '');
+  else if (!t || t.category !== n.category) setDl('d-fam', '', `● new${when}`);
+  else { const p = Math.round((n.pct_new - t.pct_new) * 10) / 10; setDl('d-fam', tone(p), `${arrow(p)} ${sgn(p)} pts${when}`); }
 }
 function render() {
   const cats = D.categories || [];
