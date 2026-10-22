@@ -1,0 +1,69 @@
+RESALE RADAR - DATA LAYER IN ACTION
+One thing: For fashion brand product managers who find out too late that a product isn't wanted, Resale Radar is an AI agent that spots which products are resold brand new on Vinted, and explains why.
+
+========================================================================
+A - ATTENTION
+========================================================================
+On 22 Oct 2026 our agent read the 315 latest Cabaia listings on Vinted (France + Germany).
+57.8% are NEW (182 listings). 30.5% still have the tags on (96 listings).
+In the "Poche" family, 69% of resold items are new.
+None of this shows up in a brand's return rate: these customers kept the product, then quietly put it up for sale.
+
+========================================================================
+I - INTEREST: what the data layer does, step by step
+========================================================================
+HOW THE DATA FLOWS
+
+  Brand catalog (Shopify products.json) --------------------+
+                                                            v
+  Vinted brand pages --> Keenable Fetch API (live) --> [Aiven PostgreSQL]
+                                                       products | listings | matches
+                                                       memory   | labels   | runs
+                                                            ^          |
+                                 reads + writes at each step|          v
+                                    [AI agent: collect -> identify (GPT vision) -> learn -> explain]
+                                                            |
+                                                            v
+                         [App on Aiven Runtime] --> brand product manager (Overview, Teach the agent)
+                                  |
+                                  +--> "Refresh from Vinted" = a run row queued in PostgreSQL,
+                                       picked up by the agent worker, progress streamed back from runs.log
+
+1. Sources (live, public, no private access)
+   - Brand catalog: the brand's public Shopify feed (products.json). Cabaia: 2,038 products, up to 6 photos each, price, product family.
+   - Second-hand listings: Vinted brand pages, fetched live through the Keenable Fetch API (live=true). Each page gives ~155 listing cards: title, condition, price, price with fees, photo. Several Vinted countries (FR, DE, NL, IT, ES, BE).
+   - Seller identities are never stored (GDPR): a listing is keyed by its photo id only, which also de-duplicates the same item shown on several country sites.
+
+2. Storage: Aiven for PostgreSQL (service resale-radar-pg), shared by the app running on Aiven Runtime
+   - products   : the brand catalog (refreshed on demand)
+   - listings   : every listing ever seen, with first_seen / last_seen -> daily new listings per product, resale velocity over time
+   - matches    : for each listing, the product family, the exact catalog reference (or "unknown"), confidence, reasoning, number of reasoning steps
+   - memory     : what the agent learned (title aliases such as "bandouliere" -> crossbody, confirmed listing photos used as extra reference images, human corrections)
+   - labels     : human ground truth entered in the app (Labeling tab), used both for learning and for the benchmark
+   - runs       : every agent run with its live step log, tokens, cost, duration and written insights
+
+3. The agent uses the data at every step (it is not a single LLM call)
+   - COLLECT: a planning model calls fetch_vinted_catalog(country, page) as a tool, looks at how many NEW listings each page brought, and stops when the marginal gain drops below ~10% or the budget is reached. Example from the real run: page 1 timed out (504), the agent moved to page 2 on its own.
+   - IDENTIFY: for each listing, (a) detect the product family among the catalog's own families, (b) shortlist candidate products from the catalog by text score boosted by memory aliases, (c) vision comparison of the listing photo with candidate photos (gpt-6-luna), (d) if confidence is low, escalate to a stronger model (gpt-6.1-sol) with more photos per candidate, (e) if still unsure, answer "unknown" instead of guessing.
+   - LEARN: high-confidence matches and human labels are written to memory; the next run reuses them (aliases boost the shortlist, confirmed photos become extra reference images).
+   - EXPLAIN: aggregates per family and per reference (listings, % new with tags, % new without tags, average resale price vs catalog price) and turns them into written insights for the product team, with explicit caveats on small samples.
+
+4. Freshness, volume, reliability
+   - Freshness: every run fetches Vinted live; first_seen gives new listings per day per product once the radar runs daily.
+   - Volume: one run = 315 listings, 1,201 model calls, 2.39 M input tokens, processed in 8.7 minutes.
+   - Reliability: 100% of listings classified into a product family; exact reference only when the agent is confident (47 of 315 on the first run, the rest flagged "unknown" rather than mislabeled). Human labels measure the real accuracy (see benchmark file).
+   - Cost: $0.29 for the full run through the OpenAI API, i.e. about $0.001 per listing. The agent now runs on a ChatGPT subscription through the Codex CLI (zero marginal cost): the app on Aiven Runtime queues each run in PostgreSQL and a worker executes it.
+
+========================================================================
+D - DESIRE: what a brand gets
+========================================================================
+- A ranking of product families and references by "resold new" share: the products customers do not want, beyond returns.
+- The resale discount per family (how much value a product loses the day it is resold).
+- Written insights for the product, merchandising and buying teams, refreshed every day.
+- Example (Cabaia, first run): "Poche" family 87 listings, 69% new; "Sac" 36 listings, 61% new; "Sac a dos" 18 listings, 67% new with an average resale price of 62 EUR.
+
+========================================================================
+A - ACTION
+========================================================================
+- Live app (Aiven Runtime): see submission URL. Tabs: Radar (run the agent, live log, results by family and reference) and Labeling (human corrections that the agent learns from).
+- First customers: product teams of mid-size fashion brands with a strong Vinted footprint (bags, accessories, kids). Offer: a free resale audit of their catalog, then a monthly radar per brand.
