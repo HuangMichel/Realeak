@@ -879,7 +879,7 @@ def _fmt_price(v):
     return f"{v:.0f}" if isinstance(v, (int, float)) else "?"
 
 
-_PREFETCH = ThreadPoolExecutor(max_workers=8)
+_PREFETCH = ThreadPoolExecutor(max_workers=16)
 
 
 def _images_for(cands, per_cand, width, detail):
@@ -1007,6 +1007,8 @@ def identify_batch(ctx: Ctx, listings, idx: Index, mem_for, workers=6, on_result
     """mem_for(listing) -> Memory|None. Retourne les resultats (meme ordre) ; erreur -> {'error': ...}."""
     if use_codex():
         workers = int(_env("CODEX_CONCURRENCY", "6") or 6)
+    else:
+        workers = int(_env("OPENAI_CONCURRENCY", "16") or 16)
 
     def work(l):
         if ctx.fatal:
