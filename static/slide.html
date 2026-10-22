@@ -8,16 +8,18 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Instrument+Sans:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  /* 1rem = 1/120 of the slide width = 16px at 1920x1080 */
+  @page { size: 1920px 1080px; margin: 0; }
+  /* 1rem = 1/120 of the slide width = 16px at 1920x1080 (min text 0.9rem = 14.4px) */
   :root {
     /* Trendtrack palette (trendtrack.io): black #010808, carbon #161d1d, brand green #72fd4e */
     --navy: #010808;
     --card: #161d1d;
     --line: #ffffff1f;
     --text: #FFFFFF;
-    --fade: #ffffffba;
-    --muted: #ffffff80;
+    --fade: #ffffffd0;
+    --muted: #ffffff94;
     --accent: #72fd4e;
+    --accent-soft: rgba(114,253,78,.09);
     --font-head: "Instrument Sans", "Geist", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
   }
   html { font-size: calc(min(100vw, 177.78vh) / 120); }
@@ -34,89 +36,141 @@
     background:
       radial-gradient(70rem 40rem at 95% -10%, rgba(114,253,78,.10), transparent 60%),
       var(--navy);
-    display: flex; flex-direction: column;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: .9rem;
     overflow: hidden;
   }
   .n { color: var(--accent); font-weight: 700; }
+  b { font-weight: 700; color: var(--text); }
 
   /* header */
   header {
-    display: flex; align-items: center; justify-content: space-between; gap: 3rem;
-    padding: 2.4rem 4rem 1.6rem;
+    display: flex; align-items: center; gap: 2.6rem;
+    padding: 1.3rem 3.2rem 0;
   }
-  .brand { display: flex; align-items: center; gap: 1rem; flex: none; }
-  .brand svg { width: 4rem; height: 4rem; }
-  .brand span { font-family: var(--font-head); font-size: 3rem; font-weight: 700; letter-spacing: -0.02em; }
+  .brand { display: flex; align-items: center; gap: .9rem; flex: none; }
+  .brand svg { width: 3.6rem; height: 3.6rem; }
+  .brand span { font-family: var(--font-head); font-size: 2.8rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
   .brand span em { font-style: normal; color: var(--accent); }
   .tagline {
-    margin: 0; max-width: 72rem; font-size: 1.65rem; line-height: 1.38;
+    margin: 0; flex: 1; font-size: 1.68rem; line-height: 1.32;
     font-weight: 500; color: var(--text);
   }
+  .tagline b { color: var(--accent); }
 
-  /* columns */
-  main {
-    flex: 1; min-height: 0;
-    display: grid; grid-template-columns: .95fr 1.1fr 1.3fr; gap: 1.6rem;
-    padding: 0 4rem 1.6rem;
+  /* rows + cards */
+  .row { display: grid; gap: .9rem; padding: 0 3.2rem; min-height: 0; }
+  .row1 { grid-template-columns: .95fr 1fr 1.3fr; }
+  .row2 { grid-template-columns: .9fr 1.1fr; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 1rem;
+    padding: 1.1rem 1.5rem 1.2rem; display: flex; flex-direction: column; min-width: 0; min-height: 0;
   }
-  .col {
-    background: var(--card); border: 1px solid var(--line); border-radius: 1.1rem;
-    padding: 1.8rem 2rem; display: flex; flex-direction: column; min-width: 0;
+  .card h2 {
+    margin: 0 0 .85rem; display: flex; align-items: baseline; gap: .8rem;
+    font-family: var(--font-head); font-size: 1.45rem; font-weight: 700; line-height: 1.1;
   }
-  .col h2 {
-    margin: 0 0 1.4rem; font-size: 1.15rem; font-weight: 700; letter-spacing: .16em;
-    text-transform: uppercase; color: var(--accent);
+  .card h2 .lbl {
+    font-family: "Geist", system-ui, sans-serif;
+    font-size: 1rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--accent);
   }
-  .col p { margin: 0; font-size: 1.65rem; line-height: 1.45; color: var(--text); }
+  .card h2 .lbl + .ttl::before { content: "\00b7"; color: var(--muted); margin-right: .8rem; }
 
-  /* problem */
-  .stat { margin-top: auto; padding-top: 1rem; }
+  /* attention */
+  .card p { margin: 0; font-size: 1.32rem; line-height: 1.36; color: var(--fade); }
+  .stat { margin-top: auto; padding-top: .6rem; }
   .stat .big {
-    font-family: var(--font-head); font-size: 8.4rem; line-height: 1; font-weight: 700; letter-spacing: -0.015em;
+    font-family: var(--font-head); font-size: 5.8rem; line-height: 1; font-weight: 700; letter-spacing: -0.015em;
     color: var(--accent);
   }
-  .stat .cap { margin-top: .8rem; font-size: 1.45rem; line-height: 1.4; color: var(--text); }
-  .stat .note { margin-top: .7rem; font-size: 1.1rem; color: var(--muted); }
+  .stat .cap { margin-top: .5rem; font-size: 1.24rem; line-height: 1.3; color: var(--text); }
+  .stat .note { margin-top: .35rem; font-size: .95rem; color: var(--muted); }
 
-  /* steps */
-  ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1.5rem; }
-  li { display: flex; gap: 1.1rem; align-items: flex-start; }
-  li .num {
-    flex: none; width: 2.7rem; height: 2.7rem; border-radius: 50%;
-    background: var(--accent); color: var(--navy); font-weight: 800; font-size: 1.4rem;
-    display: grid; place-items: center; margin-top: .1rem;
+  /* why now */
+  ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .8rem; justify-content: space-between; flex: 1; }
+  ul li { position: relative; padding-left: 1.5rem; font-size: 1.32rem; line-height: 1.34; color: var(--fade); }
+  ul li::before {
+    content: ""; position: absolute; left: 0; top: .5em; width: .62rem; height: .62rem; border-radius: 2px;
+    background: var(--accent);
   }
-  li .txt { font-size: 1.45rem; line-height: 1.42; color: var(--fade); }
-  li .txt b { color: var(--text); font-weight: 700; }
 
-  /* proof table */
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 1.3rem; }
-  th:nth-child(1), td:nth-child(1) { width: 32%; }
-  th:nth-child(2), td:nth-child(2) { width: 24%; }
-  th:nth-child(3), td:nth-child(3), th:nth-child(4), td:nth-child(4) { width: 22%; }
+  /* agent steps */
+  ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .7rem; justify-content: space-between; flex: 1; }
+  ol li { display: flex; gap: 1rem; align-items: flex-start; font-size: 1.3rem; line-height: 1.34; color: var(--fade); }
+  ol li .num {
+    flex: none; width: 2.2rem; height: 2.2rem; border-radius: 50%;
+    background: var(--accent); color: var(--navy); font-weight: 800; font-size: 1.15rem;
+    display: grid; place-items: center; margin-top: .05rem;
+  }
+
+  /* data layer */
+  .flow { flex: 1; display: flex; align-items: center; gap: .15rem; min-height: 0; }
+  .node {
+    flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+    padding: 1rem .5rem; min-height: 14rem; border: 1px solid var(--line); border-radius: .7rem; background: #ffffff0a;
+    font-size: 1.2rem; font-weight: 600; line-height: 1.22;
+  }
+  .node small { display: block; margin-top: .3rem; font-size: 1rem; font-weight: 500; color: var(--muted); }
+  .node.pg { flex: 1.9 1 0; min-height: 17rem; border-color: var(--accent); background: var(--accent-soft); }
+  .node.pg .nm { font-size: 1.3rem; font-weight: 700; color: var(--accent); margin-bottom: .55rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: .3rem; justify-content: center; }
+  .chips span {
+    font-size: 1.02rem; font-weight: 600; padding: .25rem .6rem; border-radius: 99px;
+    border: 1px solid #72fd4e66; color: var(--text); background: #72fd4e14;
+  }
+  .node.out { flex: 1.25 1 0; }
+  .arr { flex: none; align-self: center; width: 1.7rem; height: 1.7rem; }
+  .dnote {
+    margin-top: .9rem; padding: .85rem 1.1rem; border-radius: .7rem; background: var(--accent-soft);
+    border-left: 3px solid var(--accent); font-size: 1.3rem; line-height: 1.35; text-wrap: balance; color: var(--text);
+  }
+  code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .95em; color: var(--accent); font-weight: 600; }
+
+  /* evidence */
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table + table { margin-top: 1.1rem; }
   th {
-    text-align: left; font-size: 1.05rem; font-weight: 600; color: var(--muted);
-    padding: 0 .5rem .8rem 0; border-bottom: 1px solid var(--line); line-height: 1.25;
+    text-align: left; font-size: 1.1rem; font-weight: 600; color: var(--fade);
+    padding: 0 .6rem .6rem 0; border-bottom: 1px solid #ffffff3d; line-height: 1.22;
   }
-  td { padding: 1.8rem .5rem 1.8rem 0; overflow-wrap: anywhere; border-bottom: 1px solid var(--line); vertical-align: middle; line-height: 1.3; }
+  td { padding: .65rem .6rem .65rem 0; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 1.28rem; line-height: 1.25; color: var(--fade); }
   tr:last-child td { border-bottom: 0; }
   td:first-child { font-weight: 600; color: var(--text); }
-  td:not(:first-child) { color: var(--accent); font-weight: 700; font-size: 1.8rem; line-height: 1.2; }
-  tr.hl td:first-child { color: var(--accent); }
+  .t1 th:nth-child(1), .t1 td:nth-child(1) { width: 44%; }
+  .t1 th:nth-child(2), .t1 td:nth-child(2) { width: 31%; }
+  .t1 th:nth-child(3), .t1 td:nth-child(3) { width: 25%; }
+  .t2 th:nth-child(1), .t2 td:nth-child(1) { width: 44%; }
+  .t2 th:nth-child(2), .t2 td:nth-child(2) { width: 26%; }
+  .t2 th:nth-child(3), .t2 td:nth-child(3) { width: 30%; }
+  .t1 td:nth-child(2) { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+  .t1 td:nth-child(2) small { font-size: 1rem; font-weight: 500; color: var(--muted); }
+  .t1 tr.hl td { background: var(--accent-soft); }
+  .t1 tr.hl td:first-child { color: var(--accent); padding-left: .6rem; }
+  .t1 tr.hl td:nth-child(2) { color: var(--accent); font-size: 1.65rem; }
+  .t1 tr.hl td:last-child { color: var(--accent); font-weight: 600; }
+  .t2 th:last-child, .t2 td:last-child { color: var(--accent); font-weight: 700; }
   .run {
-    margin-top: auto; padding: 1.6rem 1.6rem; border: 1px solid var(--accent);
-    border-radius: .8rem; font-size: 1.7rem; font-weight: 600; background: rgba(114,253,78,.07);
+    margin-top: auto; padding: .75rem 1rem; border: 1px solid var(--accent);
+    border-radius: .7rem; font-size: 1.2rem; line-height: 1.3; font-weight: 600; background: var(--accent-soft);
   }
+  .card.ev .run { margin-top: 1.1rem; }
 
   /* footer */
   footer {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
-    background: var(--navy); border-top: 2px solid var(--accent);
+    display: flex; align-items: center; gap: 2rem; padding: .9rem 3.2rem 1rem;
+    background: #0d1414; border-top: 2px solid var(--accent);
   }
-  footer div { padding: 1.3rem 4rem 1.4rem; font-size: 1.2rem; line-height: 1.5; color: var(--fade); }
-  footer div + div { border-left: 1px solid var(--line); padding-left: 2.5rem; }
-  footer div:first-child { padding-right: 2.5rem; }
-  footer b { color: var(--text); font-weight: 700; }
+  footer h2 { margin: 0; flex: none; font-family: var(--font-head); font-size: 1.45rem; line-height: 1.1; font-weight: 700; display: flex; flex-direction: column; gap: .25rem; }
+  footer h2 .lbl { font-family: "Geist", system-ui, sans-serif; font-size: 1rem; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+  footer p { margin: 0; font-size: 1.3rem; line-height: 1.4; color: var(--fade); padding-left: 2rem; border-left: 1px solid var(--line); }
+
+  @media print {
+    html { font-size: 16px; }
+    html, body { width: 1920px; height: 1080px; overflow: hidden; }
+    .slide { width: 1920px; height: 1080px; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
 </style>
 </head>
 <body>
@@ -134,49 +188,86 @@
       </svg>
       <span>Resale <em>Radar</em></span>
     </div>
-    <p class="tagline">Vinted is the world's largest panel of disappointed customers. We tell brands which products their customers resell unworn, and why.</p>
+    <p class="tagline">For fashion brand product managers who find out too late that a product isn't wanted, Resale Radar is an AI agent that spots which products are resold brand new on Vinted, and explains why.</p>
   </header>
 
-  <main>
-    <section class="col">
-      <h2>The problem</h2>
-      <p>Brands track returns. They don't see the products customers keep but don't want: those end up on Vinted, new, often with tags still on.</p>
+  <!-- ROW 1 : Attention / Why now / Interest -->
+  <div class="row row1">
+    <section class="card">
+      <h2><span class="lbl">Attention</span><span class="ttl">The problem</span></h2>
+      <p>Brands track returns. They don't see the products customers keep but don't want: those end up on Vinted, brand new.</p>
       <div class="stat">
         <div class="big">57.8%</div>
-        <div class="cap">of the <span class="n">315</span> latest Cabaïa listings on Vinted are new (<span class="n">30.5%</span> with tags)</div>
+        <div class="cap">of the <span class="n">315</span> latest Cabaïa listings on Vinted are new &middot; <span class="n">30.5%</span> still have tags</div>
         <div class="note">real data, 22 Oct 2026</div>
       </div>
     </section>
 
-    <section class="col">
-      <h2>The agent</h2>
+    <section class="card">
+      <h2><span class="lbl">Why now</span></h2>
+      <ul>
+        <li><b>EU ban on destroying unsold clothing and footwear</b> (ESPR, July 2026): brands must make what people actually keep</li>
+        <li><b>Second-hand is mainstream:</b> every unwanted product becomes a public listing</li>
+        <li><b>Vision AI now reads a listing for about <span class="n">$0.001</span>:</b> watching every listing daily is affordable</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2><span class="lbl">Interest</span><span class="ttl">The agent</span></h2>
       <ol>
-        <li><span class="num">1</span><span class="txt"><b>Collect:</b> decides which Vinted pages and countries to read through Keenable, stops when new listings dry up</span></li>
-        <li><span class="num">2</span><span class="txt"><b>Identify:</b> compares each listing photo to <span class="n">2,038</span> catalog products (vision), escalates hard cases to a stronger model, says 'unknown' rather than guess</span></li>
-        <li><span class="num">3</span><span class="txt"><b>Learn:</b> stores aliases and confirmed photos in memory (<span class="n">77</span> after one run) and human corrections, so the next run is more accurate</span></li>
-        <li><span class="num">4</span><span class="txt"><b>Explain:</b> per product family, % resold new, resale discount, and written insights for the product team</span></li>
+        <li><span class="num">1</span><span><b>Reads Vinted live</b> via Keenable, decides which pages and countries, stops when nothing new</span></li>
+        <li><span class="num">2</span><span><b>Recognizes the product</b> from the photo among <span class="n">2,038</span> catalog items, escalates when unsure, says 'unknown' rather than guess</span></li>
+        <li><span class="num">3</span><span><b>Learns:</b> nicknames, confirmed photos and team corrections go to memory</span></li>
+        <li><span class="num">4</span><span><b>Writes recommendations</b> for the product team</span></li>
       </ol>
     </section>
+  </div>
 
-    <section class="col">
-      <h2>Proof (before / after)</h2>
-      <table>
-        <thead>
-          <tr><th>Method</th><th>Family accuracy</th><th>Exact product</th><th>Cost / listing</th></tr>
-        </thead>
+  <!-- ROW 2 : Data layer / Desire -->
+  <div class="row row2">
+    <section class="card">
+      <h2><span class="lbl">Data layer</span></h2>
+      <div class="flow">
+        <div class="node">Vinted listings</div>
+        <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="#72fd4e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h16M13 6l6 6-6 6"/></svg>
+        <div class="node">Keenable live fetch</div>
+        <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="#72fd4e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h16M13 6l6 6-6 6"/></svg>
+        <div class="node pg">
+          <div class="nm">Aiven PostgreSQL</div>
+          <div class="chips"><span>catalog</span><span>listings</span><span>matches</span><span>agent memory</span><span>runs</span></div>
+        </div>
+        <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="#72fd4e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h16M13 6l6 6-6 6"/></svg>
+        <div class="node">Agent <small>(GPT vision)</small></div>
+        <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="#72fd4e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h16M13 6l6 6-6 6"/></svg>
+        <div class="node out">Brand dashboard <small>on Aiven Runtime</small></div>
+      </div>
+      <div class="dnote">Every listing keeps <code>first_seen</code> / <code>last_seen</code>: new unwanted listings per product, per day.</div>
+    </section>
+
+    <section class="card ev">
+      <h2><span class="lbl">Desire</span><span class="ttl">Evidence (before / after)</span></h2>
+      <table class="t1">
+        <thead><tr><th>Question: share of Cabaïa resold brand new?</th><th>Answer</th><th>Basis</th></tr></thead>
         <tbody>
-          <tr><td>Keyword workflow (no AI)</td><td>{{BENCH_BASE_CAT}}</td><td>{{BENCH_BASE_REF}}</td><td>$0</td></tr>
-          <tr><td>Agent</td><td>{{BENCH_AGENT_CAT}}</td><td>{{BENCH_AGENT_REF}}</td><td>{{BENCH_AGENT_COST}}</td></tr>
-          <tr class="hl"><td>Agent + memory</td><td>{{BENCH_MEM_CAT}}</td><td>{{BENCH_MEM_REF}}</td><td>{{BENCH_MEM_COST}}</td></tr>
+          <tr><td>No-data baseline (GPT-6.1, no data)</td><td>≈30% <small>(guess, range 20–45%)</small></td><td>low confidence</td></tr>
+          <tr class="hl"><td>Resale Radar (agent + data)</td><td>57.8% <small>(182 of 315)</small></td><td>measured today</td></tr>
         </tbody>
       </table>
-      <div class="run">Full run: <span class="n">315</span> listings in <span class="n">8.7 min</span> for <span class="n">$0.29</span></div>
+      <table class="t2">
+        <thead><tr><th>Naive keyword workflow vs agent</th><th>Keywords (no AI)</th><th>Agent</th></tr></thead>
+        <tbody>
+          <tr><td>Listings classified by family</td><td>89%</td><td>100%</td></tr>
+          <tr><td>Exact product, photo-verified</td><td>no (text only)</td><td>yes, or 'unknown'</td></tr>
+          <tr><td>Accuracy on human-labeled listings</td><td>{{BENCH_BASE_ACC}}</td><td>{{BENCH_AGENT_ACC}}</td></tr>
+        </tbody>
+      </table>
+      <div class="run">Full run: <span class="n">315</span> listings in <span class="n">8.7 min</span> for <span class="n">$0.29</span> &middot; now on a ChatGPT subscription (zero marginal cost)</div>
     </section>
-  </main>
+  </div>
 
   <footer>
-    <div><b>Data layer:</b> Aiven PostgreSQL (catalog, listings, matches, agent memory, runs) · Aiven Runtime · Keenable live fetch · OpenAI vision</div>
-    <div><b>First customers:</b> product teams of mid-size fashion brands with a strong Vinted footprint (bags, accessories, kids). Free resale audit → monthly radar per brand.</div>
+    <h2><span class="lbl">Action</span>First users</h2>
+    <p>First users: product teams of mid-size fashion brands with a strong Vinted footprint (bags, accessories, kids).<br><b>Free resale audit</b> of their catalog &rarr; <b>paid monthly radar</b> per brand. Live app: <b>resale-radar</b> on Aiven Runtime.</p>
   </footer>
 </div>
 </body>
