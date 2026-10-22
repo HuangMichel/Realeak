@@ -1,11 +1,11 @@
-# Resale Radar
+# Realeak
 
-**For fashion brand product managers who find out too late that a product isn't wanted, Resale Radar is an AI agent that spots which products are resold brand new on Vinted, and explains why.**
+**For fashion brands losing money on products nobody wants, Realeak is an AI agent that reads Vinted every day and flags what's resold brand new, so the next reorder is right.**
 
 - Live demo: https://01a1634d-3d18-7dfd-bd64-7fe0e4f1f7ea-8080.eur-1.aiven.app
 - One-page pitch: https://01a1634d-3d18-7dfd-bd64-7fe0e4f1f7ea-8080.eur-1.aiven.app/slide
 
-![Resale Radar overview for Cabaïa](docs/screenshots/overview.png)
+![Realeak overview for Cabaïa](docs/screenshots/overview.png)
 
 ![One-page pitch (/slide)](docs/screenshots/slide.png)
 
@@ -54,7 +54,7 @@ The agent calls the OpenAI API and the Keenable API. "Refresh" in the UI creates
 
 Measured on 22 Oct 2026 on real public data (Cabaïa catalog: 2,038 products; 315 latest Cabaïa listings on Vinted FR + DE). Full write-up: [`deliverables/benchmark-before-after.md`](deliverables/benchmark-before-after.md).
 
-- **No data vs data**: asked the same question without data, the model guessed "about 30%" new (range 20 to 45%). Resale Radar measured **57.8%** (182 of 315 listings), every listing traceable in the database.
+- **No data vs data**: asked the same question without data, the model guessed "about 30%" new (range 20 to 45%). Realeak measured **57.8%** (182 of 315 listings), every listing traceable in the database.
 - **Keywords vs agent**: a keyword workflow classifies 89% of listings into a family and proposes an exact product for 145 of them from the title text only. The agent classifies **100%** of families and names an exact product for 47 listings **verified on the photo**, flagging the rest as `unknown`.
 - **Time and cost**: 315 listings read and classified in **8.7 minutes for $0.29** (about $0.001 per listing).
 

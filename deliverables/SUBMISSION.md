@@ -1,8 +1,8 @@
-# Resale Radar — hackathon submission
+# Realeak — hackathon submission
 
 01. Project name and one-line pitch
-    Resale Radar
-    For fashion brand product managers who find out too late that a product isn't wanted, Resale Radar is an AI agent that spots which products are resold brand new on Vinted, and explains why.
+    Realeak
+    For fashion brands losing money on products nobody wants, Realeak is an AI agent that reads Vinted every day and flags what's resold brand new, so the next reorder is right.
 
     Hosted app (Aiven Runtime): https://01a1634d-3d18-7dfd-bd64-7fe0e4f1f7ea-8080.eur-1.aiven.app
 

@@ -64,8 +64,8 @@ def _price(role: str) -> tuple[float, float]:
 
 
 def use_codex() -> bool:
-    """LLM_BACKEND=codex (defaut) : CLI Codex = abonnement ChatGPT, zero API facturee ; LLM_BACKEND=openai : SDK OpenAI."""
-    return (_env("LLM_BACKEND") or "codex").lower() != "openai"
+    """LLM_BACKEND=openai (defaut) : SDK OpenAI ; LLM_BACKEND=codex : CLI Codex (local)."""
+    return (_env("LLM_BACKEND") or "openai").lower() == "codex"
 
 
 def codex_model(role: str) -> str:
