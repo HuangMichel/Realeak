@@ -219,7 +219,7 @@
     <div class="kpi"><b id="k-fam">–</b><span id="k-fam2">Most unwanted</span><small class="dl" id="d-fam"></small></div>
   </div>
 
-  <div class="sh"><h2 class="sec">Least wanted families</h2><button class="lnk hide" id="fam-all" onclick="famsAll=!famsAll;render()">Show all</button></div>
+  <div class="sh"><h2 class="sec">Most listed families on Vinted</h2><button class="lnk hide" id="fam-all" onclick="famsAll=!famsAll;render()">Show all</button></div>
   <div class="leg" aria-label="Legend"><span><i style="background:#2563eb"></i>New, tags still on</span><span><i style="background:#f97316"></i>New, tags removed</span><span><i style="background:var(--tt-platine)"></i>Used</span></div>
   <div id="fams"></div>
 
@@ -354,7 +354,7 @@ function render() {
   $('h-upd').textContent = done ? 'Updated ' + new Date((done.finished_at || done.started_at)).toLocaleString('en-GB', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
   $('k-list').textContent = n || '–';
   $('k-new').textContent = tot ? nw : '–';
-  const fams = cats.filter(c => c.n_listings >= 5 && !FAM_SKIP.has(c.category)).sort((a, b) => b.pct_new - a.pct_new || b.n_listings - a.n_listings);
+  const fams = cats.filter(c => c.n_listings >= 5 && !FAM_SKIP.has(c.category)).sort((a, b) => b.n_listings - a.n_listings || b.pct_new - a.pct_new);
   const top = fams.find(c => c.n_listings >= 15);
   $('k-fam').textContent = top ? Math.round(top.pct_new) + '%' : '–';
   $('k-fam2').textContent = top ? 'Most unwanted: ' + top.category : 'Most unwanted';
